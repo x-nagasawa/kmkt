@@ -1,0 +1,12 @@
+# Dot Files
+.settings
+.classpath
+.project
+
+# Class Files #
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
