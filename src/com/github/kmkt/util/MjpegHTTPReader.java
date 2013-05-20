@@ -117,13 +117,11 @@ public class MjpegHTTPReader {
             }
 
             // boundary バイト列作成
-            // TODO CRLF+boundarystr+CRLF で区切るべきながら、先頭の CRLF を含めるとフレーム末2byteが欠落するバグ有り
-            // たぶん StreamSplitterのバグ
+            String boundary_str = "--"+content_type[1].replaceFirst("boundary=", "");
             ByteArrayOutputStream b = new ByteArrayOutputStream();
-//            b.write((byte) 0x0d);
-//            b.write((byte) 0x0a);
-            b.write("--".getBytes());
-            b.write(content_type[1].replaceFirst("boundary=", "").getBytes());
+            b.write((byte) 0x0d);
+            b.write((byte) 0x0a);
+            b.write(boundary_str.getBytes());
             b.write((byte) 0x0d);
             b.write((byte) 0x0a);
             byte[] boundary = b.toByteArray();

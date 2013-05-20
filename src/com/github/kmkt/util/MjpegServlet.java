@@ -62,6 +62,7 @@ public class MjpegServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             return;
         }
+        logger.info("Accept HTTP connection.");
 
         String delemeter_str = Long.toHexString(System.currentTimeMillis());
         byte[] delimiter = ("--"+delemeter_str).getBytes();
@@ -94,12 +95,12 @@ public class MjpegServlet extends HttpServlet {
                 out.write(CRLF);
                 out.write(CRLF);
                 out.write(frame);
-//                out.write(CRLF); // XXX 厳密には必要？
+                out.write(CRLF);
                 out.flush();
             }
         } catch (IOException e) {
             // connection closed
-            logger.info("HTTP connection closed.");
+            logger.info("Close HTTP connection.");
         } catch (InterruptedException e) {
             logger.info(e.getMessage(), e);
         }
