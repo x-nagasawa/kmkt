@@ -195,6 +195,7 @@ public class MjpegHTTPReader {
                 while (threadLoop) {
                     int len = 0;
                     byte[] readbuf = new byte[4*1024];  // 読み出しバッファ
+                    logger.trace("Wait next stream");
                     InputStream is = splitter.nextStream();
                     if (is == null) {
                         logger.info("Stream ended");
@@ -206,6 +207,7 @@ public class MjpegHTTPReader {
 
                     ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
+                    logger.trace("Wait recving");
                     while (true) {
                         len = is.read(readbuf);
                         if (len == -1)
