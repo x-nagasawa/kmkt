@@ -192,9 +192,9 @@ public class MjpegHTTPReader {
             logger.info("Start recv thread");
             try {
                 byte[] deleimter_of_header = new byte[]{(byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a};
+                byte[] readbuf = new byte[4*1024];  // 読み出しバッファ
                 while (threadLoop) {
                     int len = 0;
-                    byte[] readbuf = new byte[4*1024];  // 読み出しバッファ
                     logger.trace("Wait next stream");
                     InputStream is = splitter.nextStream();
                     if (is == null) {
