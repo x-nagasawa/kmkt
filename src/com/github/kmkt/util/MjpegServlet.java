@@ -3,10 +3,11 @@ package com.github.kmkt.util;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -32,8 +33,7 @@ public class MjpegServlet extends HttpServlet {
     private static final byte[] CRLF = new byte[]{0x0d, 0x0a};
     private static final String CONTENT_TYPE = "multipart/x-mixed-replace";
 
-    private AtomicBoolean servicing = new AtomicBoolean();  // 接続中フラグ
-    BlockingQueue<byte[]> frameServer = new SynchronousQueue<byte[]>();
+    private Set<BlockingQueue<byte[]>> queueSet = new CopyOnWriteArraySet<BlockingQueue<byte[]>>();
 
     /**
      * JPEG フレームデータを供給する。
@@ -49,61 +49,65 @@ public class MjpegServlet extends HttpServlet {
      * @param frame JPEG フレームデータ
      */
     public void pourFrame(byte[] frame) {
-        frameServer.offer(frame);
+        for (BlockingQueue<byte[]> frameServerOfConnection : queueSet) {
+            frameServerOfConnection.offer(frame);
+        }
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         logger.debug("doGet");
-        if (!servicing.compareAndSet(false, true)) {
-            // 別接続有り
-            logger.debug("there are other connections");
-            resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-            return;
-        }
-        logger.info("Accept HTTP connection.");
-
-        String delemeter_str = Long.toHexString(System.currentTimeMillis());
-        byte[] delimiter = ("--"+delemeter_str).getBytes();
-        byte[] content_type = "Content-Type: image/jpeg".getBytes();
-
-        resp.setStatus(HttpServletResponse.SC_OK);
-        resp.setContentType(CONTENT_TYPE+";boundary=" + delemeter_str);
-        resp.setHeader("Connection", "Close");
-
-        OutputStream out = new BufferedOutputStream(resp.getOutputStream());
+        BlockingQueue<byte[]> frameServer = new SynchronousQueue<byte[]>();
         try {
-            frameServer.clear();
-            int i=-1;
-            while (true) {
-                byte[] frame = frameServer.poll(10, TimeUnit.SECONDS);
-                if (frame == null)
-                    continue;
+            queueSet.add(frameServer);
+            logger.debug("queueSet size : {}", queueSet.size());
 
-                byte[] content_length = ("Content-Length: " + frame.length).getBytes();
+            logger.info("Accept HTTP connection.");
 
-                i++;
+            String delemeter_str = Long.toHexString(System.currentTimeMillis());
+            byte[] delimiter = ("--"+delemeter_str).getBytes();
+            byte[] content_type = "Content-Type: image/jpeg".getBytes();
 
-                logger.debug("Send frame {}", i);
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.setContentType(CONTENT_TYPE+";boundary=" + delemeter_str);
+            resp.setHeader("Connection", "Close");
 
-                out.write(delimiter);
-                out.write(CRLF);
-                out.write(content_type);
-                out.write(CRLF);
-                out.write(content_length);
-                out.write(CRLF);
-                out.write(CRLF);
-                out.write(frame);
-                out.write(CRLF);
-                out.flush();
+            OutputStream out = new BufferedOutputStream(resp.getOutputStream());
+            try {
+                frameServer.clear();
+                int i=-1;
+                while (true) {
+                    byte[] frame = frameServer.poll(10, TimeUnit.SECONDS);
+                    if (frame == null)
+                        continue;
+
+                    byte[] content_length = ("Content-Length: " + frame.length).getBytes();
+
+                    i++;
+
+                    logger.trace("Send frame {}", i);
+
+                    out.write(delimiter);
+                    out.write(CRLF);
+                    out.write(content_type);
+                    out.write(CRLF);
+                    out.write(content_length);
+                    out.write(CRLF);
+                    out.write(CRLF);
+                    out.write(frame);
+                    out.write(CRLF);
+                    out.flush();
+                }
+            } catch (IOException e) {
+                // connection closed
+                logger.info("Close HTTP connection.");
+            } catch (InterruptedException e) {
+                logger.info(e.getMessage(), e);
             }
-        } catch (IOException e) {
-            // connection closed
-            logger.info("Close HTTP connection.");
-        } catch (InterruptedException e) {
-            logger.info(e.getMessage(), e);
+        } finally {
+            queueSet.remove(frameServer);
+            logger.debug("queueSet size : {}", queueSet.size());
         }
-        servicing.set(false);
     }
 }
