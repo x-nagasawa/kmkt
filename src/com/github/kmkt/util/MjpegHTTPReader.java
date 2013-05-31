@@ -227,16 +227,12 @@ public class MjpegHTTPReader {
                                 break;
                             if (j == deleimter_of_header.length - 1) {  // found delimiter
                                 int limit = recv_block.length;
-                                // 末尾にCRLFが付いている場合は取り除く 一旦コメントアウト
-                                // XXX StreamSplitter と delimiter 指定が正しければ不要なはず
-//                                if (recv_block[limit-2] == (byte) 0x0d && recv_block[limit-1] == (byte) 0x0a) {
-//                                    limit -= 2;
-//                                }
                                 jpeg_frame = Arrays.copyOfRange(recv_block, i + deleimter_of_header.length, limit);
                             }
                         }
                     }
 
+                    // XXX 要JPEGフォーマット判定？
                     logger.debug("Frame size {} byte", jpeg_frame.length);
 
                     if (recv_callback != null)
