@@ -1,10 +1,11 @@
 kmkt
 ====
-©•ª—pJavaƒ‰ƒCƒuƒ‰ƒŠ
+è‡ªåˆ†ç”¨Javaãƒ©ã‚¤ãƒ–ãƒ©ãƒª
 
 
-* org.slf4j.impl SLF4j org.grlea.log.SimpleLogger ƒuƒŠƒbƒW
-* W3CDTF W3CDTFŒ`®‚ÌƒtƒH[ƒ}ƒbƒ^
-* PrefixedProperties ƒvƒƒpƒeƒB‚ğŠK‘w“I‚Éˆµ‚¢“Ç‚İ‚Ş‚½‚ß‚Ì Properties ƒ‰ƒbƒp[
-* StreamSplitter InputStream ‚ğw’è‚ÌƒoƒCƒg—ñ‚ğƒfƒŠƒ~ƒ^‚Æ‚µ‚Ä•ªŠ„“Ç‚İ‚İ‚·‚é•â•ƒNƒ‰ƒX
-
+* org.slf4j.impl SLF4j org.grlea.log.SimpleLogger ãƒ–ãƒªãƒƒã‚¸
+* W3CDTF W3CDTFå½¢å¼ã®ãƒ•ã‚©ãƒ¼ãƒãƒƒã‚¿
+* PrefixedProperties ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚’éšå±¤çš„ã«æ‰±ã„èª­ã¿è¾¼ã‚€ãŸã‚ã® Properties ãƒ©ãƒƒãƒ‘ãƒ¼
+* StreamSplitter InputStream ã‚’æŒ‡å®šã®ãƒã‚¤ãƒˆåˆ—ã‚’ãƒ‡ãƒªãƒŸã‚¿ã¨ã—ã¦åˆ†å‰²èª­ã¿è¾¼ã¿ã™ã‚‹è£œåŠ©ã‚¯ãƒ©ã‚¹
+* MjpegServlet MJPEG over HTTP é…ä¿¡ servlet. çµ„ã¿è¾¼ã¿Jettyç”¨. è¦ Jetty8
+* MjpegHTTPReader MJPEG over HTTP å—ä¿¡ç”¨. è¦ Apache HttpClient
