@@ -22,6 +22,8 @@ import java.util.regex.Pattern;
  * YYYY-MM-DDThh:mm:ssTZD（例：2001-08-02T10:45:23+09:00）
  * (6) 年月日および時分秒および小数部分
  * YYYY-MM-DDThh:mm:ss.sTZD（例：2001-08-02T10:45:23.5+09:00）
+ *
+ * License : MIT License
  */
 public class W3CDTF {
     private static final Pattern W3CDTF_PATTERN = Pattern.compile("(\\d{4})(?:-(\\d{2})(?:-(\\d{2})(?:T(\\d{2}):(\\d{2})(?::(\\d{2})(?:\\.(\\d+))?)?(?:(?:([\\+-])(\\d{2})\\:(\\d{2}))|(Z)))?)?)?");

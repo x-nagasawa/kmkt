@@ -26,6 +26,8 @@ import java.util.Set;
  * このようなプロパティから userA.* や userB.userinfo.* での設定ペアの取り出しを行う。
  * 
  * 書き込み側は未対応。
+ * 
+ * License : MIT License
  */
 public class PrefixedProperties extends Properties {
     private static final long serialVersionUID = -1322580429986053832L;

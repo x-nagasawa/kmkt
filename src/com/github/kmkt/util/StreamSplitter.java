@@ -10,6 +10,8 @@ import java.util.Arrays;
  * <pre>
  * 非スレッドセーフ
  * </pre>
+ * 
+ * License : MIT License
  */
 public class StreamSplitter {
     private byte[] delimiter = null;        // デリミタ
