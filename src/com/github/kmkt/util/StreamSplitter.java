@@ -13,7 +13,7 @@ import java.util.Arrays;
  * 
  * License : MIT License
  */
-public class StreamSplitter {
+public class StreamSplitter implements AutoCloseable {
     private byte[] delimiter = null;        // デリミタ
     private InputStream inputStream = null; // 元InputStream
 
@@ -93,6 +93,11 @@ public class StreamSplitter {
                 return (pos % ringBufffer.length);
         }
         return -1;
+    }
+
+    @Override
+    public void close() throws IOException {
+        inputStream.close();
     }
 
     public InputStream nextStream() {

@@ -140,9 +140,9 @@ public class MjpegHTTPReader {
     }
 
 
-    public synchronized void stop() throws InterruptedException {
+    public synchronized void stop() throws InterruptedException, IOException {
         if (!isActive())
-            return;
+            return;        
         streamReadLoop.requestStop();
         streamReadLoop.join();
         streamReadLoop = null;
@@ -179,14 +179,16 @@ public class MjpegHTTPReader {
 
         /**
          * 受信停止を要求する
+         * @throws IOException 
          */
-        public void requestStop() {
-            threadLoop = true;
+        public void requestStop() throws IOException {
+            threadLoop = false;
             if (this.getState() == Thread.State.BLOCKED || 
                 this.getState() == Thread.State.WAITING ||
                 this.getState() == Thread.State.TIMED_WAITING) {
                 streamReadLoop.interrupt();
             }
+            splitter.close();
         }
 
         @Override
@@ -241,7 +243,9 @@ public class MjpegHTTPReader {
                         recv_callback.onRecvFrame(jpeg_frame);
                 }
             } catch (IOException e) {
-                logger.error("IOException when stream reading", e);
+                if (threadLoop) {
+                    logger.error("IOException when stream reading", e);
+                }
             } finally {
                 try {
                     inputStream.close();
