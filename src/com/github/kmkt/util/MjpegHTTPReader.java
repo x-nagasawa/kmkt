@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * MJPEG over HTTP ストリームを受け取り、callback するクラス
+ * 
+ * License : MIT License
  */
 public class MjpegHTTPReader {
     private static final Logger logger = LoggerFactory.getLogger(MjpegHTTPReader.class);

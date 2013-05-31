@@ -25,6 +25,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
  * wait : フレーム間ウエイト (ms)
  * jpg  : MJPEG の1フレームとして送出するJPEGファイル 複数指定時は先頭から順に送出される
  *
+ * License : MIT License
  */
 public class MjpegServerTest {
     private static final String PROPERTY_FILE = "mjpegserver.properties";

@@ -18,13 +18,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * License: MIT License
- */
-
-/**
  * MJPEG over HTTP servlet
  * 
- * ※複数接続には未対応
+ * License : MIT License
  */
 public class MjpegServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
