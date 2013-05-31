@@ -8,7 +8,11 @@ import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.nio.channels.NetworkChannel;
 import java.nio.charset.Charset;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -77,6 +81,7 @@ public class UTF8StringReceiver {
         this.listenCallback = callback;
     }
 
+    Set<NetworkChannel> activeChannels = Collections.synchronizedSet(new HashSet<NetworkChannel>());
     AsynchronousServerSocketChannel assc = null;
     public void start() throws IOException {
         if (assc != null)
@@ -101,6 +106,7 @@ public class UTF8StringReceiver {
                         @Override
                         public void run() {
                             ByteBuffer buffer = ByteBuffer.allocate(1024);
+                            activeChannels.add(result);
                             try {
                                 StringBuilder buf = new StringBuilder();
                                 while (result.isOpen()) {
@@ -131,15 +137,19 @@ public class UTF8StringReceiver {
                             } catch (InterruptedException e) {
                                 logger.debug("Exception occured when SocketChannel reading", e);
                             } catch (ExecutionException e) {
-                                logger.error("Exception occured when SocketChannel reading", e);
-                            }
-                            try {
-                                result.close();
-                            } catch (IOException e) {
-                                logger.error("Exception occured when SocketChannel closing", e);
-                            }
-                            if (listen != null) {
-                                listen.onClose();
+                                if (assc.isOpen()) {
+                                    logger.error("Exception occured when SocketChannel reading", e);
+                                }
+                            } finally {
+                                try {
+                                    result.close();
+                                    activeChannels.remove(result);
+                                } catch (IOException e) {
+                                    logger.error("Exception occured when SocketChannel closing", e);
+                                }
+                                if (listen != null) {
+                                    listen.onClose();
+                                }
                             }
                         }
                     });
@@ -168,6 +178,16 @@ public class UTF8StringReceiver {
             execPool.shutdown();
         }
         assc.close();
+        synchronized (activeChannels) {
+            for (NetworkChannel soc : activeChannels) {
+                try {
+                    soc.close();
+                } catch (IOException e) {
+                    logger.error("Error at processing a socket of " + soc.getLocalAddress(), e);
+                }
+            }
+            activeChannels.clear();
+        }
     }
 
     // flip 済み ByteBuffer からUTF-8文字列を抽出
