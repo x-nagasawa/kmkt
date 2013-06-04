@@ -83,10 +83,11 @@ public class MjpegHTTPReader {
      * MJPEG の受信を開始する
      * 
      * @param connecte_timeout 接続タイムアウト
+     * @param read_timeout Socket Reead タイムアウト
      * @throws ClientProtocolException
      * @throws IOException
      */
-    public synchronized void start(int connecte_timeout) throws ClientProtocolException, IOException {
+    public synchronized void start(int connecte_timeout, int read_timeout) throws ClientProtocolException, IOException {
         if (connecte_timeout < 0)
             throw new IllegalArgumentException("connecte_timeout should be positive");
         if (isActive())
@@ -95,6 +96,7 @@ public class MjpegHTTPReader {
         HttpClient httpclient = new DefaultHttpClient();
         HttpParams params = httpclient.getParams();
         HttpConnectionParams.setConnectionTimeout(params, connecte_timeout);
+        HttpConnectionParams.setSoTimeout(params, read_timeout);
         HttpGet httpget = new HttpGet(target);
         try {
             // GET リクエスト
