@@ -83,10 +83,11 @@ public class MjpegHTTPReader {
      * MJPEG の受信を開始する
      * 
      * @param connecte_timeout 接続タイムアウト
+     * @param read_timeout Socket Reead タイムアウト
      * @throws ClientProtocolException
      * @throws IOException
      */
-    public synchronized void start(int connecte_timeout) throws ClientProtocolException, IOException {
+    public synchronized void start(int connecte_timeout, int read_timeout) throws ClientProtocolException, IOException {
         if (connecte_timeout < 0)
             throw new IllegalArgumentException("connecte_timeout should be positive");
         if (isActive())
@@ -95,6 +96,7 @@ public class MjpegHTTPReader {
         HttpClient httpclient = new DefaultHttpClient();
         HttpParams params = httpclient.getParams();
         HttpConnectionParams.setConnectionTimeout(params, connecte_timeout);
+        HttpConnectionParams.setSoTimeout(params, read_timeout);
         HttpGet httpget = new HttpGet(target);
         try {
             // GET リクエスト
@@ -140,9 +142,9 @@ public class MjpegHTTPReader {
     }
 
 
-    public synchronized void stop() throws InterruptedException {
+    public synchronized void stop() throws InterruptedException, IOException {
         if (!isActive())
-            return;
+            return;        
         streamReadLoop.requestStop();
         streamReadLoop.join();
         streamReadLoop = null;
@@ -179,14 +181,16 @@ public class MjpegHTTPReader {
 
         /**
          * 受信停止を要求する
+         * @throws IOException 
          */
-        public void requestStop() {
-            threadLoop = true;
+        public void requestStop() throws IOException {
+            threadLoop = false;
             if (this.getState() == Thread.State.BLOCKED || 
                 this.getState() == Thread.State.WAITING ||
                 this.getState() == Thread.State.TIMED_WAITING) {
                 streamReadLoop.interrupt();
             }
+            splitter.close();
         }
 
         @Override
@@ -241,7 +245,9 @@ public class MjpegHTTPReader {
                         recv_callback.onRecvFrame(jpeg_frame);
                 }
             } catch (IOException e) {
-                logger.error("IOException when stream reading", e);
+                if (threadLoop) {
+                    logger.error("IOException when stream reading", e);
+                }
             } finally {
                 try {
                     inputStream.close();
