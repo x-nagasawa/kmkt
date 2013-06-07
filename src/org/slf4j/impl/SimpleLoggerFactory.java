@@ -1,7 +1,5 @@
-/* 
- * Copyright (c) 2004-2005 SLF4J.ORG
- * Copyright (c) 2004-2005 QOS.ch
- * Copyright (c) 2012 NagasawaXien
+/*
+ * Copyright (c) 2012-2013 NagasawaXien
  *
  * All rights reserved.
  * 
@@ -29,14 +27,14 @@
  * shall not be used in advertising or otherwise to promote the sale, use
  * or other dealings in this Software without prior written authorization
  * of the copyright holder.
- *
+ * 
  */
-
 package org.slf4j.impl;
 
 import org.grlea.log.SimpleLogger;
 import org.slf4j.Logger;
 import org.slf4j.ILoggerFactory;
+import org.slf4j.helpers.Util;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -58,7 +56,7 @@ public class SimpleLoggerFactory implements ILoggerFactory {
                 SimpleLogger ilogger = new SimpleLogger(cls);
                 logger = new SimpleLoggerAdapter(ilogger, name);
             } catch (Exception e) {
-                System.err.println("Failed to find class specified by name : " + name + ". Use " + Logger.class.getName());
+                Util.report("Failed to find class specified by name : " + name + ". Use " + Logger.class.getName());
                 SimpleLogger ilogger = new SimpleLogger(Logger.class);
                 logger = new SimpleLoggerAdapter(ilogger, name);
             }
