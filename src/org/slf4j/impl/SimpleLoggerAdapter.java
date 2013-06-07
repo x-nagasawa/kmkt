@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2004-2005 SLF4J.ORG
- * Copyright (c) 2004-2005 QOS.ch
- * Copyright (c) 2012 NagasawaXien
+ * Copyright (c) 2012-2013 NagasawaXien
  *
  * All rights reserved.
  *
@@ -31,7 +29,6 @@
  * of the copyright holder.
  *
  */
-
 package org.slf4j.impl;
 
 import org.grlea.log.DebugLevel;
@@ -47,7 +44,7 @@ import org.slf4j.helpers.MessageFormatter;
  * mentioned in this class refer to those defined in the org.grlea.log.DebugLevel.
  */
 public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
-    private static final long serialVersionUID = 3640289244648147855L;
+    private static final long serialVersionUID = 3640289244648147856L;
     private final SimpleLogger logger;
 
     SimpleLoggerAdapter(SimpleLogger logger, String name) {
@@ -55,31 +52,38 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         this.name = name;
     }
 
+    @Override
     public boolean isErrorEnabled() {
         return logger.wouldLog(DebugLevel.L2_ERROR);
     }
 
+    @Override
     public boolean isWarnEnabled() {
         return logger.wouldLog(DebugLevel.L3_WARN);
     }
 
+    @Override
     public boolean isInfoEnabled() {
         return logger.wouldLog(DebugLevel.L4_INFO);
     }
 
+    @Override
     public boolean isDebugEnabled() {
         return logger.wouldLog(DebugLevel.L5_DEBUG);
     }
 
+    @Override
     public boolean isTraceEnabled() {
         return logger.wouldLog(DebugLevel.L6_VERBOSE);
     }
 
-
+    // ERROR
+    @Override
     public void error(String arg0) {
         logger.error(arg0);
     }
 
+    @Override
     public void error(String arg0, Object arg1) {
         if (isErrorEnabled()) {
             FormattingTuple ft = MessageFormatter.format(arg0, arg1);
@@ -91,6 +95,7 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
+    @Override
     public void error(String arg0, Object arg1, Object arg2) {
         if (isErrorEnabled()) {
             FormattingTuple ft = MessageFormatter.format(arg0, arg1, arg2);
@@ -102,7 +107,8 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
-    public void error(String arg0, Object[] arg1) {
+    @Override
+    public void error(String arg0, Object... arg1) {
         if (isErrorEnabled()) {
             FormattingTuple ft = MessageFormatter.arrayFormat(arg0, arg1);
             if (ft.getThrowable() == null) {
@@ -113,15 +119,19 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
+    @Override
     public void error(String arg0, Throwable arg1) {
         logger.error(arg0);
         logger.errorException(arg1);
     }
 
+    // WARN
+    @Override
     public void warn(String arg0) {
         logger.warn(arg0);
     }
 
+    @Override
     public void warn(String arg0, Object arg1) {
         if (isWarnEnabled()) {
             FormattingTuple ft = MessageFormatter.format(arg0, arg1);
@@ -133,6 +143,7 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
+    @Override
     public void warn(String arg0, Object arg1, Object arg2) {
         if (isWarnEnabled()) {
             FormattingTuple ft = MessageFormatter.format(arg0, arg1, arg2);
@@ -144,7 +155,8 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
-    public void warn(String arg0, Object[] arg1) {
+    @Override
+    public void warn(String arg0, Object... arg1) {
         if (isWarnEnabled()) {
             FormattingTuple ft = MessageFormatter.arrayFormat(arg0, arg1);
             if (ft.getThrowable() == null) {
@@ -155,15 +167,20 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
+    @Override
     public void warn(String arg0, Throwable arg1) {
         logger.warn(arg0);
         logger.warnException(arg1);
     }
 
+    // INFO
+
+    @Override
     public void info(String arg0) {
         logger.info(arg0);
     }
 
+    @Override
     public void info(String arg0, Object arg1) {
         if (isInfoEnabled()) {
             FormattingTuple ft = MessageFormatter.format(arg0, arg1);
@@ -175,6 +192,7 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
+    @Override
     public void info(String arg0, Object arg1, Object arg2) {
         if (isInfoEnabled()) {
             FormattingTuple ft = MessageFormatter.format(arg0, arg1, arg2);
@@ -186,7 +204,8 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
-    public void info(String arg0, Object[] arg1) {
+    @Override
+    public void info(String arg0, Object... arg1) {
         if (isInfoEnabled()) {
             FormattingTuple ft = MessageFormatter.arrayFormat(arg0, arg1);
             if (ft.getThrowable() == null) {
@@ -197,15 +216,19 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
+    @Override
     public void info(String arg0, Throwable arg1) {
         logger.info(arg0);
         logger.dbe(DebugLevel.L4_INFO, arg1);
     }
 
+    // DEBUG
+    @Override
     public void debug(String arg0) {
         logger.debug(arg0);
     }
 
+    @Override
     public void debug(String arg0, Object arg1) {
         if (isDebugEnabled()) {
             FormattingTuple ft = MessageFormatter.format(arg0, arg1);
@@ -217,6 +240,7 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
+    @Override
     public void debug(String arg0, Object arg1, Object arg2) {
         if (isDebugEnabled()) {
             FormattingTuple ft = MessageFormatter.format(arg0, arg1, arg2);
@@ -228,8 +252,8 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
-
-    public void debug(String arg0, Object[] arg1) {
+    @Override
+    public void debug(String arg0, Object... arg1) {
         if (isDebugEnabled()) {
             FormattingTuple ft = MessageFormatter.arrayFormat(arg0, arg1);
             if (ft.getThrowable() == null) {
@@ -240,15 +264,19 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
+    @Override
     public void debug(String arg0, Throwable arg1) {
         logger.debug(arg0);
         logger.dbe(DebugLevel.L5_DEBUG, arg1);
     }
 
+    // TRACE
+    @Override
     public void trace(String arg0) {
         logger.verbose(arg0);
     }
 
+    @Override
     public void trace(String arg0, Object arg1) {
         if (isTraceEnabled()) {
             FormattingTuple ft = MessageFormatter.format(arg0, arg1);
@@ -260,6 +288,7 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
+    @Override
     public void trace(String arg0, Object arg1, Object arg2) {
         if (isTraceEnabled()) {
             FormattingTuple ft = MessageFormatter.format(arg0, arg1, arg2);
@@ -271,8 +300,8 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
-
-    public void trace(String arg0, Object[] arg1) {
+    @Override
+    public void trace(String arg0, Object... arg1) {
         if (isTraceEnabled()) {
             FormattingTuple ft = MessageFormatter.arrayFormat(arg0, arg1);
             if (ft.getThrowable() == null) {
@@ -283,6 +312,7 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         }
     }
 
+    @Override
     public void trace(String arg0, Throwable arg1) {
         logger.verbose(arg0);
         logger.dbe(DebugLevel.L6_VERBOSE, arg1);
