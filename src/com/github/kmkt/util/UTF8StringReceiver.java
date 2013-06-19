@@ -81,8 +81,8 @@ public class UTF8StringReceiver {
         this.listenCallback = callback;
     }
 
-    Set<NetworkChannel> activeChannels = Collections.synchronizedSet(new HashSet<NetworkChannel>());
-    AsynchronousServerSocketChannel assc = null;
+    private Set<NetworkChannel> activeChannels = Collections.synchronizedSet(new HashSet<NetworkChannel>());
+    private AsynchronousServerSocketChannel assc = null;
     public void start() throws IOException {
         if (assc != null)
             return;
@@ -177,7 +177,9 @@ public class UTF8StringReceiver {
         if (ownExecPool) {
             execPool.shutdown();
         }
-        assc.close();
+        if (assc != null) {
+            assc.close();
+        }
         synchronized (activeChannels) {
             for (NetworkChannel soc : activeChannels) {
                 try {
