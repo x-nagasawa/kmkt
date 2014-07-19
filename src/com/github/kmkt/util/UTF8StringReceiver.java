@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Socket から UTF-8 の
+ * Socket から UTF-8 の文字列を行単位で読み出し、リスナを callback する
  * 
  * License : MIT License
  */
