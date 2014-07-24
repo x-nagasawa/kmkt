@@ -68,6 +68,7 @@ public class ImageServlet extends HttpServlet {
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.setContentType(content_type);
         resp.setContentLength(sending_frame.length);
+        resp.setHeader("Cache-Control", "no-store");
         resp.setHeader("Connection", "Close");
 
         OutputStream out = new BufferedOutputStream(resp.getOutputStream());
