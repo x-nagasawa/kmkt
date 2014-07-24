@@ -125,8 +125,6 @@ public class MjpegHTTPReader {
             // boundary バイト列作成
             String boundary_str = "--"+content_type[1].replaceFirst("boundary=", "");
             ByteArrayOutputStream b = new ByteArrayOutputStream();
-            b.write((byte) 0x0d);
-            b.write((byte) 0x0a);
             b.write(boundary_str.getBytes());
             b.write((byte) 0x0d);
             b.write((byte) 0x0a);
