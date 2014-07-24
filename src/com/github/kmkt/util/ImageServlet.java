@@ -3,6 +3,8 @@ package com.github.kmkt.util;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -23,7 +25,7 @@ public class ImageServlet extends HttpServlet {
 
     private static final String CONTENT_TYPE = "image/jpeg";
 
-    private Object lock = new Object();
+    private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
     private byte[] frame = null;
     private String contentType = "";
 
@@ -38,9 +40,12 @@ public class ImageServlet extends HttpServlet {
      * @param image イメージデータ
      */
     public void pourFrame(byte[] image, String content_type) {
-        synchronized(lock) {
+        lock.writeLock().lock();
+        try {
             this.frame = image;
             this.contentType = content_type;
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -52,9 +57,12 @@ public class ImageServlet extends HttpServlet {
 
         byte[] sending_frame = null;
         String content_type = "";
-        synchronized (lock) {
+        lock.writeLock().lock();
+        try {
             sending_frame = frame;
             content_type = contentType;
+        } finally {
+            lock.writeLock().unlock();
         }
 
         if (sending_frame == null) {
