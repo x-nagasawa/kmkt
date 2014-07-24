@@ -10,10 +10,9 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,10 +92,11 @@ public class MjpegHTTPReader {
         if (isActive())
             throw new IllegalStateException("Already started");
 
-        HttpClient httpclient = new DefaultHttpClient();
-        HttpParams params = httpclient.getParams();
-        HttpConnectionParams.setConnectionTimeout(params, connecte_timeout);
-        HttpConnectionParams.setSoTimeout(params, read_timeout);
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(connecte_timeout)
+                .setSocketTimeout(read_timeout).build();
+        HttpClient httpclient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+
         HttpGet httpget = new HttpGet(target);
         try {
             // GET リクエスト
