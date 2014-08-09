@@ -55,20 +55,57 @@ public class UTF8StringReceiver {
         listenEndpoint = listen;
     }
 
+    /**
+     * Socket accept 時の callback
+     */
     public interface ListenCompletionListener {
+        /**
+         * accept できた場合に callback される
+         * accept された socket からのデータを受け取るための ReceiveListener を返す
+         * null を返した場合は、受信されたデータは読み捨てされる
+         * 
+         * @param remote リモートアドレス
+         * @return 
+         */
         ReceiveListener<?> accepted(SocketAddress remote);
+
+        /**
+         * accept に失敗した場合に callback される
+         * @param e 失敗要因となった例外
+         */
         void failed(Throwable e);
     }
 
+    /**
+     * Socket での UTF-8 文字列受信時に呼び出される callback
+     *
+     * @param <T>
+     */
     public static abstract class ReceiveListener<T> {
         private T attachment;
 
+        /**
+         * コンストラクタ
+         * @param attachment callback時に付与される任意のオブジェクト
+         */
         public ReceiveListener(T attachment) {
             this.attachment = attachment;
         }
 
+        /**
+         * Socket での UTF-8 文字列受信時に呼び出される callback
+         * 
+         * @param line 受信された文字列
+         * @param attachement コンストラクタで与えたオブジェクト
+         */
         public abstract void onReceive(String line, T attachement);
+        
+        /**
+         * Socket close 時に呼び出される callback
+         * @param attachement
+         */
         public abstract void onClose(T attachement);
+
         void onReceive(String line) {
             this.onReceive(line, this.attachment);
         }
