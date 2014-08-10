@@ -135,6 +135,11 @@ public class UTF8StringReceiver {
                     final ReceiveListener<?> listen;
                     if (local_listener != null) {
                         listen = local_listener.accepted(remote);
+                        if (listen == null) {
+                            logger.debug("Ignore and close connection from {}", remote);
+                            result.close();
+                            return;
+                        }
                     } else {
                         listen = null;
                     }
