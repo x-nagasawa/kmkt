@@ -73,6 +73,8 @@ public class MjpegServlet extends HttpServlet {
             throws ServletException, IOException {
         logger.debug("doGet");
         
+        String remote = req.getRemoteAddr() + ":" + req.getRemotePort();
+        
         ClientChannel client = new ClientChannel();
         client.channelOpenedAt = System.currentTimeMillis();
         client.lastShownStatistics = client.channelOpenedAt;
@@ -80,7 +82,7 @@ public class MjpegServlet extends HttpServlet {
             clientConnectionSet.add(client);
             logger.debug("queueSet size : {}", clientConnectionSet.size());
 
-            logger.info("Accept HTTP connection.");
+            logger.info("Accept HTTP connection from {}", remote);
 
             String delemeter_str = Long.toHexString(System.currentTimeMillis());
             byte[] delimiter = ("--"+delemeter_str).getBytes();
@@ -122,14 +124,15 @@ public class MjpegServlet extends HttpServlet {
                     client.sentBytes.addAndGet(frame.length);
                     if (StatisticsDispleyPeriod < System.currentTimeMillis() - client.lastShownStatistics) {
                         client.lastShownStatistics = System.currentTimeMillis();
-                        logger.debug("[Frames Recv: {}, Send: {}, Drop: {}, Size Recv: {}, Send: {}]", 
+                        logger.debug("Statistics of {} [Frames Recv: {}, Send: {}, Drop: {}, Size Recv: {}, Send: {}]", 
+                                remote,
                                 client.recvedFrames.get(), client.sentFrames.get(), client.dropFrames.get(),
                                 client.recvedBytes.get(), client.sentBytes.get());
                     }
                 }
             } catch (IOException e) {
                 // connection closed
-                logger.info("Close HTTP connection.");
+                logger.info("Close HTTP connection from {}", remote);
             } catch (InterruptedException e) {
                 logger.info(e.getMessage(), e);
             }
