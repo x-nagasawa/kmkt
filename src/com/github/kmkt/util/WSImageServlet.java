@@ -77,7 +77,7 @@ public class WSImageServlet extends WebSocketServlet {
             try {
                 connection.sendMessage(frame, 0, frame.length);
             } catch (IOException e) {
-                logger.info(e.getMessage(), e);
+                logger.error(e.getMessage(), e);
             }
         }
     }
