@@ -230,7 +230,7 @@ public class MjpegHTTPReader {
                         bos.write(readbuf, 0, len);
                     }
                     byte[] recv_block = bos.toByteArray();
-                    logger.debug("Recv {} byte", recv_block.length);
+                    logger.trace("Recv {} byte", recv_block.length);
 
                     recv_frames++;
                     recv_bytes += recv_block.length;
@@ -251,7 +251,7 @@ public class MjpegHTTPReader {
                     }
 
                     // XXX 要JPEGフォーマット判定？
-                    logger.debug("Frame size {} byte", jpeg_frame.length);
+                    logger.trace("Frame size {} byte", jpeg_frame.length);
 
                     if (recv_callback != null) {
                         recv_callback.onRecvFrame(jpeg_frame);
