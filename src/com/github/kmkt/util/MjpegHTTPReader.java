@@ -50,6 +50,8 @@ public class MjpegHTTPReader {
         void onFinished();
     }
 
+    public static long StatisticsDispleyPeriod = 60*1000;   // 
+
     private URI target = null;
     private StreamReaderThread streamReadLoop = null;
     private RecvFrameCallback recv_callback = null;
@@ -195,6 +197,13 @@ public class MjpegHTTPReader {
 
         @Override
         public void run() {
+            long recv_frames = 0;
+            long recv_bytes = 0;
+            long error_frames = 0;
+            long notify_frames = 0;
+            long notify_bytes = 0;
+            long last_shown_statistics = System.currentTimeMillis();
+            
             logger.info("Start recv thread");
             try {
                 byte[] deleimter_of_header = new byte[]{(byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a};
@@ -223,6 +232,9 @@ public class MjpegHTTPReader {
                     byte[] recv_block = bos.toByteArray();
                     logger.debug("Recv {} byte", recv_block.length);
 
+                    recv_frames++;
+                    recv_bytes += recv_block.length;
+
                     // TODO multipart のヘッダ確認
 
                     // body 部の JPEG フレームの取り出し
@@ -241,8 +253,17 @@ public class MjpegHTTPReader {
                     // XXX 要JPEGフォーマット判定？
                     logger.debug("Frame size {} byte", jpeg_frame.length);
 
-                    if (recv_callback != null)
+                    if (recv_callback != null) {
                         recv_callback.onRecvFrame(jpeg_frame);
+                        notify_frames++;
+                        notify_bytes += jpeg_frame.length;
+                    }
+                    if (StatisticsDispleyPeriod < System.currentTimeMillis() - last_shown_statistics) {
+                        last_shown_statistics = System.currentTimeMillis();
+                        logger.debug("Statistics [Frames Recv: {}, Send: {}, Drop: {}, Size Recv: {}, Send: {}]", 
+                                recv_frames, notify_frames, error_frames,
+                                recv_bytes, notify_bytes);
+                    }
                 }
             } catch (IOException e) {
                 if (threadLoop) {
