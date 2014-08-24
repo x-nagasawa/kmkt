@@ -248,7 +248,37 @@ public class MjpegHTTPReader {
                         }
                     }
 
-                    // XXX 要JPEGフォーマット判定？
+                    // JPEG部のみ抽出
+                    int pos_soi = -1;
+                    int pos_eoi = -1;
+                    byte[] SOI = new byte[]{(byte) 0xff, (byte) 0xd8};
+                    byte[] EOI = new byte[]{(byte) 0xff, (byte) 0xd9};
+                    for (int i = 0; i < jpeg_frame.length; i++) {
+                        for (int j = 0; j < SOI.length && i + j < jpeg_frame.length; j++) {
+                            if (jpeg_frame[i + j] != SOI[j])
+                                break;
+                            if (j == SOI.length - 1) {  // found soi
+                                pos_soi = i;
+                            }
+                        }
+                    }
+                    for (int i = jpeg_frame.length - EOI.length; 0 < i; i--) {
+                        for (int j = 0; j < EOI.length && i + j < jpeg_frame.length; j++) {
+                            if (jpeg_frame[i + j] != EOI[j])
+                                break;
+                            if (j == EOI.length - 1) {  // found eoi
+                                pos_eoi = i;
+                            }
+                        }
+                    }
+
+                    if (pos_soi < 0 || pos_eoi < 0) {
+                        logger.warn("Invalid JPEG frame received. Cannot found SOI or EOI.");
+                        error_frames++;
+                        continue;
+                    }
+                    jpeg_frame = Arrays.copyOfRange(jpeg_frame, pos_soi, pos_eoi + 2 - pos_soi);
+
                     logger.trace("Frame size {} byte", jpeg_frame.length);
 
                     if (recv_callback != null) {
