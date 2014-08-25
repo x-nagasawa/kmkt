@@ -235,36 +235,37 @@ public class MjpegHTTPReader {
 
                     // TODO multipart のヘッダ確認
 
-                    // body 部の JPEG フレームの取り出し
-                    byte[] jpeg_frame = new byte[]{};
+                    // body 部の取り出し
+                    int body_pos = -1;
                     for (int i = 0; i < recv_block.length; i++) {
                         for (int j = 0; j < deleimter_of_header.length && i + j < recv_block.length; j++) {
                             if (recv_block[i + j] != deleimter_of_header[j])
                                 break;
                             if (j == deleimter_of_header.length - 1) {  // found delimiter
-                                int limit = recv_block.length;
-                                jpeg_frame = Arrays.copyOfRange(recv_block, i + deleimter_of_header.length, limit);
+                                body_pos = i + deleimter_of_header.length;
                             }
                         }
                     }
+                    if (body_pos < 0)
+                        continue;
 
                     // JPEG部のみ抽出
                     int pos_soi = -1;
                     int pos_eoi = -1;
                     byte[] SOI = new byte[]{(byte) 0xff, (byte) 0xd8};
                     byte[] EOI = new byte[]{(byte) 0xff, (byte) 0xd9};
-                    for (int i = 0; i < jpeg_frame.length; i++) {
-                        for (int j = 0; j < SOI.length && i + j < jpeg_frame.length; j++) {
-                            if (jpeg_frame[i + j] != SOI[j])
+                    for (int i = body_pos; i < recv_block.length; i++) {
+                        for (int j = 0; j < SOI.length && i + j < recv_block.length; j++) {
+                            if (recv_block[i + j] != SOI[j])
                                 break;
                             if (j == SOI.length - 1) {  // found soi
                                 pos_soi = i;
                             }
                         }
                     }
-                    for (int i = jpeg_frame.length - EOI.length; 0 < i; i--) {
-                        for (int j = 0; j < EOI.length && i + j < jpeg_frame.length; j++) {
-                            if (jpeg_frame[i + j] != EOI[j])
+                    for (int i = recv_block.length - EOI.length; pos_soi < i; i--) {
+                        for (int j = 0; j < EOI.length && i + j < recv_block.length; j++) {
+                            if (recv_block[i + j] != EOI[j])
                                 break;
                             if (j == EOI.length - 1) {  // found eoi
                                 pos_eoi = i;
@@ -277,8 +278,12 @@ public class MjpegHTTPReader {
                         error_frames++;
                         continue;
                     }
-                    jpeg_frame = Arrays.copyOfRange(jpeg_frame, pos_soi, pos_eoi + 2 - pos_soi);
+                    byte[] jpeg_frame = Arrays.copyOfRange(recv_block, pos_soi, pos_eoi + 2);
 
+/*
+                    System.out.printf("SOI:%d (%02X %02X) EOI:%d (%02X %02X)%n", pos_soi, jpeg_frame[0], jpeg_frame[1],
+                            pos_eoi, jpeg_frame[jpeg_frame.length-2], jpeg_frame[jpeg_frame.length-1]);
+*/
                     logger.trace("Frame size {} byte", jpeg_frame.length);
 
                     if (recv_callback != null) {
