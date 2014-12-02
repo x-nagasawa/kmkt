@@ -237,12 +237,14 @@ public class MjpegHTTPReader {
 
                     // body 部の取り出し
                     int body_pos = -1;
+                    found_jpegbody:
                     for (int i = 0; i < recv_block.length; i++) {
                         for (int j = 0; j < deleimter_of_header.length && i + j < recv_block.length; j++) {
                             if (recv_block[i + j] != deleimter_of_header[j])
                                 break;
                             if (j == deleimter_of_header.length - 1) {  // found delimiter
                                 body_pos = i + deleimter_of_header.length;
+                                break found_jpegbody;
                             }
                         }
                     }
