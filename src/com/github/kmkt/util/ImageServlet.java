@@ -57,12 +57,12 @@ public class ImageServlet extends HttpServlet {
 
         byte[] sending_frame = null;
         String content_type = "";
-        lock.writeLock().lock();
+        lock.readLock().lock();
         try {
             sending_frame = frame;
             content_type = contentType;
         } finally {
-            lock.writeLock().unlock();
+            lock.readLock().unlock();
         }
 
         if (sending_frame == null) {
