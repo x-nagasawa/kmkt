@@ -282,10 +282,6 @@ public class MjpegHTTPReader {
                     }
                     byte[] jpeg_frame = Arrays.copyOfRange(recv_block, pos_soi, pos_eoi + 2);
 
-/*
-                    System.out.printf("SOI:%d (%02X %02X) EOI:%d (%02X %02X)%n", pos_soi, jpeg_frame[0], jpeg_frame[1],
-                            pos_eoi, jpeg_frame[jpeg_frame.length-2], jpeg_frame[jpeg_frame.length-1]);
-*/
                     logger.trace("Frame size {} byte", jpeg_frame.length);
 
                     if (recv_callback != null) {
