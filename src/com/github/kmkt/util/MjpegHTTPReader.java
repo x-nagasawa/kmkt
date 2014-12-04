@@ -235,20 +235,53 @@ public class MjpegHTTPReader {
 
                     // TODO multipart のヘッダ確認
 
-                    // body 部の JPEG フレームの取り出し
-                    byte[] jpeg_frame = new byte[]{};
+                    // body 部の取り出し
+                    int body_pos = -1;
+                    found_jpegbody:
                     for (int i = 0; i < recv_block.length; i++) {
                         for (int j = 0; j < deleimter_of_header.length && i + j < recv_block.length; j++) {
                             if (recv_block[i + j] != deleimter_of_header[j])
                                 break;
                             if (j == deleimter_of_header.length - 1) {  // found delimiter
-                                int limit = recv_block.length;
-                                jpeg_frame = Arrays.copyOfRange(recv_block, i + deleimter_of_header.length, limit);
+                                body_pos = i + deleimter_of_header.length;
+                                break found_jpegbody;
+                            }
+                        }
+                    }
+                    if (body_pos < 0)
+                        continue;
+
+                    // JPEG部のみ抽出
+                    int pos_soi = -1;
+                    int pos_eoi = -1;
+                    byte[] SOI = new byte[]{(byte) 0xff, (byte) 0xd8};
+                    byte[] EOI = new byte[]{(byte) 0xff, (byte) 0xd9};
+                    for (int i = body_pos; i < recv_block.length; i++) {
+                        for (int j = 0; j < SOI.length && i + j < recv_block.length; j++) {
+                            if (recv_block[i + j] != SOI[j])
+                                break;
+                            if (j == SOI.length - 1) {  // found soi
+                                pos_soi = i;
+                            }
+                        }
+                    }
+                    for (int i = recv_block.length - EOI.length; pos_soi < i; i--) {
+                        for (int j = 0; j < EOI.length && i + j < recv_block.length; j++) {
+                            if (recv_block[i + j] != EOI[j])
+                                break;
+                            if (j == EOI.length - 1) {  // found eoi
+                                pos_eoi = i;
                             }
                         }
                     }
 
-                    // XXX 要JPEGフォーマット判定？
+                    if (pos_soi < 0 || pos_eoi < 0) {
+                        logger.warn("Invalid JPEG frame received. Cannot found SOI or EOI.");
+                        error_frames++;
+                        continue;
+                    }
+                    byte[] jpeg_frame = Arrays.copyOfRange(recv_block, pos_soi, pos_eoi + 2);
+
                     logger.trace("Frame size {} byte", jpeg_frame.length);
 
                     if (recv_callback != null) {
