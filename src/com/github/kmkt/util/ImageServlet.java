@@ -26,8 +26,8 @@ public class ImageServlet extends HttpServlet {
     private static final String CONTENT_TYPE = "image/jpeg";
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
-    private byte[] frame = null;
-    private String contentType = "";
+    private volatile byte[] frame = null;
+    private volatile String contentType = "";
 
     /**
      * イメージデータを供給する。
