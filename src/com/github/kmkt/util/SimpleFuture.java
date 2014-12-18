@@ -9,7 +9,10 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * スレッド間の単純な値受け渡しに用いる Future 
- * FutureTask 使うほど
+ * FutureTask の Runnable 部分を必要としない場面などに
+ * 
+ * License : MIT License
+ *
  * @see java.util.concurrent.Future
  * @param <V>
  */
