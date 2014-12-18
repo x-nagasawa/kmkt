@@ -11,7 +11,7 @@ kmkt
 * WSImageServlet WebSocket 経由でイメージを連続送信する servlet. 組み込みJetty用. 要 Jetty8
 * ImageServlet サーバ側の操作で更新可能な画像を返す servlet. 組み込みJetty用. 要 Jetty8
 * MjpegHTTPReader MJPEG over HTTP 受信用. 要 Apache HttpClient
-
+* SimpleFuture Task等に関係なくスレッド間の値受け渡しに絞ったシンプルな Future<V> 実装
 
 ### 使用外部ライブラリ
 
