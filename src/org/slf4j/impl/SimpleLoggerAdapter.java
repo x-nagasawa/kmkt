@@ -77,244 +77,151 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
         return logger.wouldLog(DebugLevel.L6_VERBOSE);
     }
 
+    private void _log(DebugLevel level, String msg) {
+        if (!logger.wouldLog(level) || msg == null || msg.isEmpty())
+            return;
+
+        logger.db(level, msg);
+    }
+
+    private void _log(DebugLevel level, FormattingTuple ft) {
+        if (logger.wouldLog(level)) {
+            logger.db(level, ft.getMessage());
+            Throwable t = ft.getThrowable();
+            if (t != null) {
+                logger.dbe(level, t);
+            }
+        }
+    }
+
     // ERROR
     @Override
     public void error(String arg0) {
-        logger.error(arg0);
+        _log(DebugLevel.L2_ERROR, arg0);
     }
 
     @Override
     public void error(String arg0, Object arg1) {
-        if (isErrorEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(arg0, arg1);
-            if (ft.getThrowable() == null) {
-                error(ft.getMessage());
-            } else {
-                error(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L2_ERROR, MessageFormatter.format(arg0, arg1));
     }
 
     @Override
     public void error(String arg0, Object arg1, Object arg2) {
-        if (isErrorEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(arg0, arg1, arg2);
-            if (ft.getThrowable() == null) {
-                error(ft.getMessage());
-            } else {
-                error(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L2_ERROR, MessageFormatter.format(arg0, arg1, arg2));
     }
 
     @Override
     public void error(String arg0, Object... arg1) {
-        if (isErrorEnabled()) {
-            FormattingTuple ft = MessageFormatter.arrayFormat(arg0, arg1);
-            if (ft.getThrowable() == null) {
-                error(ft.getMessage());
-            } else {
-                error(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L2_ERROR, MessageFormatter.arrayFormat(arg0, arg1));
     }
 
     @Override
     public void error(String arg0, Throwable arg1) {
-        logger.error(arg0);
-        logger.errorException(arg1);
+        _log(DebugLevel.L2_ERROR, MessageFormatter.format(arg0, arg1));
     }
 
     // WARN
     @Override
     public void warn(String arg0) {
-        logger.warn(arg0);
+        _log(DebugLevel.L3_WARN, arg0);
     }
 
     @Override
     public void warn(String arg0, Object arg1) {
-        if (isWarnEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(arg0, arg1);
-            if (ft.getThrowable() == null) {
-                warn(ft.getMessage());
-            } else {
-                warn(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L3_WARN, MessageFormatter.format(arg0, arg1));
     }
 
     @Override
     public void warn(String arg0, Object arg1, Object arg2) {
-        if (isWarnEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(arg0, arg1, arg2);
-            if (ft.getThrowable() == null) {
-                warn(ft.getMessage());
-            } else {
-                warn(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L3_WARN, MessageFormatter.format(arg0, arg1, arg2));
     }
 
     @Override
     public void warn(String arg0, Object... arg1) {
-        if (isWarnEnabled()) {
-            FormattingTuple ft = MessageFormatter.arrayFormat(arg0, arg1);
-            if (ft.getThrowable() == null) {
-                warn(ft.getMessage());
-            } else {
-                warn(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L3_WARN, MessageFormatter.arrayFormat(arg0, arg1));
     }
 
     @Override
     public void warn(String arg0, Throwable arg1) {
-        logger.warn(arg0);
-        logger.warnException(arg1);
+        _log(DebugLevel.L3_WARN, MessageFormatter.format(arg0, arg1));
     }
 
     // INFO
 
     @Override
     public void info(String arg0) {
-        logger.info(arg0);
+        _log(DebugLevel.L4_INFO, arg0);
     }
 
     @Override
     public void info(String arg0, Object arg1) {
-        if (isInfoEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(arg0, arg1);
-            if (ft.getThrowable() == null) {
-                info(ft.getMessage());
-            } else {
-                info(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L4_INFO, MessageFormatter.format(arg0, arg1));
     }
 
     @Override
     public void info(String arg0, Object arg1, Object arg2) {
-        if (isInfoEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(arg0, arg1, arg2);
-            if (ft.getThrowable() == null) {
-                info(ft.getMessage());
-            } else {
-                info(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L4_INFO, MessageFormatter.format(arg0, arg1, arg2));
     }
 
     @Override
     public void info(String arg0, Object... arg1) {
-        if (isInfoEnabled()) {
-            FormattingTuple ft = MessageFormatter.arrayFormat(arg0, arg1);
-            if (ft.getThrowable() == null) {
-                info(ft.getMessage());
-            } else {
-                info(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L4_INFO, MessageFormatter.arrayFormat(arg0, arg1));
     }
 
     @Override
     public void info(String arg0, Throwable arg1) {
-        logger.info(arg0);
-        logger.dbe(DebugLevel.L4_INFO, arg1);
+        _log(DebugLevel.L4_INFO, MessageFormatter.format(arg0, arg1));
     }
 
     // DEBUG
     @Override
     public void debug(String arg0) {
-        logger.debug(arg0);
+        _log(DebugLevel.L5_DEBUG, arg0);
     }
 
     @Override
     public void debug(String arg0, Object arg1) {
-        if (isDebugEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(arg0, arg1);
-            if (ft.getThrowable() == null) {
-                debug(ft.getMessage());
-            } else {
-                debug(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L5_DEBUG, MessageFormatter.format(arg0, arg1));
     }
 
     @Override
     public void debug(String arg0, Object arg1, Object arg2) {
-        if (isDebugEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(arg0, arg1, arg2);
-            if (ft.getThrowable() == null) {
-                debug(ft.getMessage());
-            } else {
-                debug(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L5_DEBUG, MessageFormatter.format(arg0, arg1, arg2));
     }
 
     @Override
     public void debug(String arg0, Object... arg1) {
-        if (isDebugEnabled()) {
-            FormattingTuple ft = MessageFormatter.arrayFormat(arg0, arg1);
-            if (ft.getThrowable() == null) {
-                debug(ft.getMessage());
-            } else {
-                debug(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L5_DEBUG, MessageFormatter.arrayFormat(arg0, arg1));
     }
 
     @Override
     public void debug(String arg0, Throwable arg1) {
-        logger.debug(arg0);
-        logger.dbe(DebugLevel.L5_DEBUG, arg1);
+        _log(DebugLevel.L5_DEBUG, MessageFormatter.format(arg0, arg1));
     }
 
     // TRACE
     @Override
     public void trace(String arg0) {
-        logger.verbose(arg0);
+        _log(DebugLevel.L6_VERBOSE, arg0);
     }
 
     @Override
     public void trace(String arg0, Object arg1) {
-        if (isTraceEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(arg0, arg1);
-            if (ft.getThrowable() == null) {
-                trace(ft.getMessage());
-            } else {
-                trace(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L6_VERBOSE, MessageFormatter.format(arg0, arg1));
     }
 
     @Override
     public void trace(String arg0, Object arg1, Object arg2) {
-        if (isTraceEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(arg0, arg1, arg2);
-            if (ft.getThrowable() == null) {
-                trace(ft.getMessage());
-            } else {
-                trace(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L6_VERBOSE, MessageFormatter.format(arg0, arg1, arg2));
     }
 
     @Override
     public void trace(String arg0, Object... arg1) {
-        if (isTraceEnabled()) {
-            FormattingTuple ft = MessageFormatter.arrayFormat(arg0, arg1);
-            if (ft.getThrowable() == null) {
-                trace(ft.getMessage());
-            } else {
-                trace(ft.getMessage(), ft.getThrowable());
-            }
-        }
+        _log(DebugLevel.L6_VERBOSE, MessageFormatter.arrayFormat(arg0, arg1));
     }
 
     @Override
     public void trace(String arg0, Throwable arg1) {
-        logger.verbose(arg0);
-        logger.dbe(DebugLevel.L6_VERBOSE, arg1);
+        _log(DebugLevel.L6_VERBOSE, MessageFormatter.format(arg0, arg1));
     }
 }
