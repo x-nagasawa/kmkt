@@ -96,132 +96,134 @@ public final class SimpleLoggerAdapter extends MarkerIgnoringBase {
 
     // ERROR
     @Override
-    public void error(String arg0) {
-        _log(DebugLevel.L2_ERROR, arg0);
+    public void error(String msg) {
+        _log(DebugLevel.L2_ERROR, msg);
     }
 
     @Override
-    public void error(String arg0, Object arg1) {
-        _log(DebugLevel.L2_ERROR, MessageFormatter.format(arg0, arg1));
+    public void error(String msg, Object arg1) {
+        _log(DebugLevel.L2_ERROR, MessageFormatter.format(msg, arg1));
     }
 
     @Override
-    public void error(String arg0, Object arg1, Object arg2) {
-        _log(DebugLevel.L2_ERROR, MessageFormatter.format(arg0, arg1, arg2));
+    public void error(String msg, Object arg1, Object arg2) {
+        _log(DebugLevel.L2_ERROR, MessageFormatter.format(msg, arg1, arg2));
     }
 
     @Override
-    public void error(String arg0, Object... arg1) {
-        _log(DebugLevel.L2_ERROR, MessageFormatter.arrayFormat(arg0, arg1));
+    public void error(String msg, Object... arg1) {
+        _log(DebugLevel.L2_ERROR, MessageFormatter.arrayFormat(msg, arg1));
     }
 
     @Override
-    public void error(String arg0, Throwable arg1) {
-        _log(DebugLevel.L2_ERROR, MessageFormatter.format(arg0, arg1));
+    public void error(String msg, Throwable arg1) {
+        _log(DebugLevel.L2_ERROR, MessageFormatter.format(msg, arg1));
     }
 
     // WARN
     @Override
-    public void warn(String arg0) {
-        _log(DebugLevel.L3_WARN, arg0);
+    public void warn(String msg) {
+        _log(DebugLevel.L3_WARN, msg);
     }
 
     @Override
-    public void warn(String arg0, Object arg1) {
-        _log(DebugLevel.L3_WARN, MessageFormatter.format(arg0, arg1));
+    public void warn(String msg, Object arg1) {
+        _log(DebugLevel.L3_WARN, MessageFormatter.format(msg, arg1));
     }
 
     @Override
-    public void warn(String arg0, Object arg1, Object arg2) {
-        _log(DebugLevel.L3_WARN, MessageFormatter.format(arg0, arg1, arg2));
+    public void warn(String msg, Object arg1, Object arg2) {
+        _log(DebugLevel.L3_WARN, MessageFormatter.format(msg, arg1, arg2));
     }
 
     @Override
-    public void warn(String arg0, Object... arg1) {
-        _log(DebugLevel.L3_WARN, MessageFormatter.arrayFormat(arg0, arg1));
+    public void warn(String msg, Object... arg1) {
+        _log(DebugLevel.L3_WARN, MessageFormatter.arrayFormat(msg, arg1));
     }
 
     @Override
-    public void warn(String arg0, Throwable arg1) {
-        _log(DebugLevel.L3_WARN, MessageFormatter.format(arg0, arg1));
+    public void warn(String msg, Throwable arg1) {
+        _log(DebugLevel.L3_WARN, MessageFormatter.format(msg, arg1));
     }
 
     // INFO
 
     @Override
-    public void info(String arg0) {
-        _log(DebugLevel.L4_INFO, arg0);
+    public void info(String msg) {
+        _log(DebugLevel.L4_INFO, msg);
     }
 
     @Override
-    public void info(String arg0, Object arg1) {
-        _log(DebugLevel.L4_INFO, MessageFormatter.format(arg0, arg1));
+    public void info(String msg, Object arg1) {
+        _log(DebugLevel.L4_INFO, MessageFormatter.format(msg, arg1));
     }
 
     @Override
-    public void info(String arg0, Object arg1, Object arg2) {
-        _log(DebugLevel.L4_INFO, MessageFormatter.format(arg0, arg1, arg2));
+    public void info(String msg, Object arg1, Object arg2) {
+        _log(DebugLevel.L4_INFO, MessageFormatter.format(msg, arg1, arg2));
     }
 
     @Override
-    public void info(String arg0, Object... arg1) {
-        _log(DebugLevel.L4_INFO, MessageFormatter.arrayFormat(arg0, arg1));
+    public void info(String msg, Object... arg1) {
+        _log(DebugLevel.L4_INFO, MessageFormatter.arrayFormat(msg, arg1));
     }
 
     @Override
-    public void info(String arg0, Throwable arg1) {
-        _log(DebugLevel.L4_INFO, MessageFormatter.format(arg0, arg1));
+    public void info(String msg, Throwable arg1) {
+        _log(DebugLevel.L4_INFO, MessageFormatter.format(msg, arg1));
     }
 
     // DEBUG
+
     @Override
-    public void debug(String arg0) {
-        _log(DebugLevel.L5_DEBUG, arg0);
+    public void debug(String msg) {
+        _log(DebugLevel.L5_DEBUG, msg);
     }
 
     @Override
-    public void debug(String arg0, Object arg1) {
-        _log(DebugLevel.L5_DEBUG, MessageFormatter.format(arg0, arg1));
+    public void debug(String msg, Object arg1) {
+        _log(DebugLevel.L5_DEBUG, MessageFormatter.format(msg, arg1));
     }
 
     @Override
-    public void debug(String arg0, Object arg1, Object arg2) {
-        _log(DebugLevel.L5_DEBUG, MessageFormatter.format(arg0, arg1, arg2));
+    public void debug(String msg, Object arg1, Object arg2) {
+        _log(DebugLevel.L5_DEBUG, MessageFormatter.format(msg, arg1, arg2));
     }
 
     @Override
-    public void debug(String arg0, Object... arg1) {
-        _log(DebugLevel.L5_DEBUG, MessageFormatter.arrayFormat(arg0, arg1));
+    public void debug(String msg, Object... arg1) {
+        _log(DebugLevel.L5_DEBUG, MessageFormatter.arrayFormat(msg, arg1));
     }
 
     @Override
-    public void debug(String arg0, Throwable arg1) {
-        _log(DebugLevel.L5_DEBUG, MessageFormatter.format(arg0, arg1));
+    public void debug(String msg, Throwable arg1) {
+        _log(DebugLevel.L5_DEBUG, MessageFormatter.format(msg, arg1));
     }
 
     // TRACE
+
     @Override
-    public void trace(String arg0) {
-        _log(DebugLevel.L6_VERBOSE, arg0);
+    public void trace(String msg) {
+        _log(DebugLevel.L6_VERBOSE, msg);
     }
 
     @Override
-    public void trace(String arg0, Object arg1) {
-        _log(DebugLevel.L6_VERBOSE, MessageFormatter.format(arg0, arg1));
+    public void trace(String msg, Object arg1) {
+        _log(DebugLevel.L6_VERBOSE, MessageFormatter.format(msg, arg1));
     }
 
     @Override
-    public void trace(String arg0, Object arg1, Object arg2) {
-        _log(DebugLevel.L6_VERBOSE, MessageFormatter.format(arg0, arg1, arg2));
+    public void trace(String msg, Object arg1, Object arg2) {
+        _log(DebugLevel.L6_VERBOSE, MessageFormatter.format(msg, arg1, arg2));
     }
 
     @Override
-    public void trace(String arg0, Object... arg1) {
-        _log(DebugLevel.L6_VERBOSE, MessageFormatter.arrayFormat(arg0, arg1));
+    public void trace(String msg, Object... arg1) {
+        _log(DebugLevel.L6_VERBOSE, MessageFormatter.arrayFormat(msg, arg1));
     }
 
     @Override
-    public void trace(String arg0, Throwable arg1) {
-        _log(DebugLevel.L6_VERBOSE, MessageFormatter.format(arg0, arg1));
+    public void trace(String msg, Throwable arg1) {
+        _log(DebugLevel.L6_VERBOSE, MessageFormatter.format(msg, arg1));
     }
 }
