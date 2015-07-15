@@ -256,12 +256,14 @@ public class MjpegHTTPReader {
                     int pos_eoi = -1;
                     byte[] SOI = new byte[]{(byte) 0xff, (byte) 0xd8};
                     byte[] EOI = new byte[]{(byte) 0xff, (byte) 0xd9};
+                    found_SOI:
                     for (int i = body_pos; i < recv_block.length; i++) {
                         for (int j = 0; j < SOI.length && i + j < recv_block.length; j++) {
                             if (recv_block[i + j] != SOI[j])
                                 break;
                             if (j == SOI.length - 1) {  // found soi
                                 pos_soi = i;
+                                break found_SOI;
                             }
                         }
                     }
