@@ -348,6 +348,17 @@ public class FixBytesUtil {
         return result;
     }
 
+
+    public static double percentageOf(byte[] a) {
+        byte[] b = new byte[a.length+1];
+        b[0] = 1;
+        BigInteger v1 = new BigInteger(1, a);
+        BigInteger v2 = new BigInteger(1, b);
+        double vv1 = v1.doubleValue();
+        double vv2 = v2.doubleValue();
+        return vv1 / vv2;
+    }
+
     /**
      * is zero
      * @param a
