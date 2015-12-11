@@ -2,7 +2,7 @@ package test;
 
 import java.nio.ByteBuffer;
 
-import com.github.kmkt.util.FrameParser;
+import com.github.kmkt.util.mjpeg.FrameParser;
 
 public class FrameParserTest {
 

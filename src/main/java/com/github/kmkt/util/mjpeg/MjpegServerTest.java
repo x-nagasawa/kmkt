@@ -1,4 +1,4 @@
-package com.github.kmkt.util;
+package com.github.kmkt.util.mjpeg;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;

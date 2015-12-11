@@ -1,4 +1,4 @@
-package com.github.kmkt.util;
+package com.github.kmkt.util.mjpeg;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -15,6 +15,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.kmkt.util.StreamSplitter;
 
 
 /**
