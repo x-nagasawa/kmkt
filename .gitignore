@@ -3,6 +3,10 @@
 .classpath
 .project
 
+.gradle
+build/
+obj/
+
 # Class Files #
 *.class
 

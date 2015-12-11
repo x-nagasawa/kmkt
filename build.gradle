@@ -1,0 +1,31 @@
+// Apply the java plugin to add support for Java
+apply plugin: 'java'
+
+sourceCompatibility = '1.7'
+targetCompatibility = '1.7'
+
+def defaultEncoding = 'UTF-8'
+[compileJava, compileTestJava]*.options*.encoding = defaultEncoding
+
+// In this section you declare where to find the dependencies of your project
+repositories {
+    // Use 'jcenter' for resolving your dependencies.
+    // You can declare any Maven/Ivy/file repository here.
+    jcenter()
+}
+
+// In this section you declare the dependencies for your production and test code
+dependencies {
+    // The production code uses the SLF4J logging API at compile time
+    compile 'org.slf4j:slf4j-api:1.7.13'
+
+    compile 'org.eclipse.jetty:jetty-servlet:8.1.18.v20150929'
+    compile 'org.eclipse.jetty:jetty-websocket:8.1.18.v20150929'
+    compile 'org.apache.httpcomponents:httpclient:4.5.1'
+
+    testCompile 'junit:junit:4.12'
+}
+
+jar {
+    baseName = 'commons'
+}
