@@ -1,4 +1,4 @@
-package com.github.kmkt.util;
+package com.github.kmkt.util.concurrent;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
