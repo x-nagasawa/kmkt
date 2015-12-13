@@ -17,4 +17,7 @@ kmkt
 * [Jetty 8.1.15](http://www.eclipse.org/jetty/)
 * [HttpClient 4.3.4](http://hc.apache.org/httpclient-3.x/)
 
+### ライセンス License
 
+MIT License
+Copyright (c) 2012-2015 NagasawaXien
