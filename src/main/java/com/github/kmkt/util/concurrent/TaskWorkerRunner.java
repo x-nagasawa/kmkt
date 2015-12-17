@@ -98,19 +98,19 @@ public class TaskWorkerRunner<T, R> {
 
         @Override
         public R call() throws Exception {
-            TaskWorker<T, R> task = null;
+            TaskWorker<T, R> worker = null;
             try {
-                task = workerSupplier.get();    // TaskWorker 取得
+                worker = workerSupplier.get();    // TaskWorker 取得
                 runningTasks.incrementAndGet();
 
                 R result = null;
-                if (task != null) {
-                    result =  task.doTask(req);
+                if (worker != null) {
+                    result =  worker.doTask(req);
                 }
                 return result;
             } finally {
-                if (workerCollector != null && task != null)
-                    workerCollector.collect(task);
+                if (workerCollector != null && worker != null)
+                    workerCollector.collect(worker);
                 runningTasks.decrementAndGet();
                 tasks.decrementAndGet();
             }
