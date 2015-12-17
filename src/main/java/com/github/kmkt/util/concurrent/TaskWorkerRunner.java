@@ -100,9 +100,9 @@ public class TaskWorkerRunner<T, R> {
         public R call() throws Exception {
             TaskWorker<T, R> task = null;
             try {
+                task = workerSupplier.get();    // TaskWorker 取得
                 runningTasks.incrementAndGet();
 
-                task = workerSupplier.get();    // TaskWorker 取得
                 R result = null;
                 if (task != null) {
                     result =  task.doTask(req);
