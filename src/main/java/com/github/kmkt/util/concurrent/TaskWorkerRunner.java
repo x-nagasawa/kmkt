@@ -36,6 +36,8 @@ public class TaskWorkerRunner<T, R> {
     protected int maximimParallel;
     /** タスク処理の実体 TaskWorker のサプライヤ・ファクトリ */
     protected final TaskWorkerSupplier<T, R> workerSupplier;
+    /** タスク処理が終了した TaskWorker の通知インタフェース */
+    protected final TaskWorkerCollector workerCollector;
     /** CallbackCaller callback しない場合は null */
     protected final CallbackCaller<T, R> callbackCaller;
 
@@ -96,16 +98,19 @@ public class TaskWorkerRunner<T, R> {
 
         @Override
         public R call() throws Exception {
+            TaskWorker<T, R> task = null;
             try {
                 runningTasks.incrementAndGet();
 
-                TaskWorker<T, R> task = workerSupplier.get();    // TaskWorker 取得
+                task = workerSupplier.get();    // TaskWorker 取得
                 R result = null;
                 if (task != null) {
                     result =  task.doTask(req);
                 }
                 return result;
             } finally {
+                if (workerCollector != null && task != null)
+                    workerCollector.collect(task);
                 runningTasks.decrementAndGet();
                 tasks.decrementAndGet();
             }
@@ -178,7 +183,18 @@ public class TaskWorkerRunner<T, R> {
      * @param supplier タスク処理の実体 TaskWorker のサプライヤorファクトリ
      */
     public TaskWorkerRunner(int maxparallels, TaskWorkerSupplier<T, R> supplier) {
-        this(maxparallels, supplier, null);
+        this(maxparallels, supplier, null, null);
+    }
+
+    /**
+     * Future のみで処理完了待ちをする TaskWorkerRunner
+     * 
+     * @param maxparallels 処理スレッド数の最大
+     * @param supplier タスク処理の実体 TaskWorker のサプライヤorファクトリ
+     * @param collector タスク処理が終了した TaskWorker の通知インタフェース
+     */
+    public TaskWorkerRunner(int maxparallels, TaskWorkerSupplier<T, R> supplier, TaskWorkerCollector collector) {
+        this(maxparallels, supplier, collector, null);
     }
 
     /**
@@ -189,6 +205,18 @@ public class TaskWorkerRunner<T, R> {
      * @param listener 処理終了時の callback null時は callback しない
      */
     public TaskWorkerRunner(int maxparallels, TaskWorkerSupplier<T, R> supplier, TaskCompleteListener<T, R> listener) {
+        this(maxparallels, supplier, null, listener);
+    }
+
+    /**
+     * Future での処理完了待機と callback での処理完了通知をする TaskWorkerRunner
+     * 
+     * @param maxparallels 処理スレッド数の最大
+     * @param supplier タスク処理の実体 TaskWorker のサプライヤorファクトリ
+     * @param collector タスク処理が終了した TaskWorker の通知インタフェース
+     * @param listener 処理終了時の callback null時は callback しない
+     */
+    public TaskWorkerRunner(int maxparallels, TaskWorkerSupplier<T, R> supplier, TaskWorkerCollector collector, TaskCompleteListener<T, R> listener) {
         if (maxparallels <= 0)
             throw new IllegalArgumentException("maxparallels should be a positive integer");
         if (supplier == null)
@@ -196,6 +224,7 @@ public class TaskWorkerRunner<T, R> {
 
         maximimParallel = maxparallels;
         workerSupplier = supplier;
+        workerCollector = collector;
         if (listener != null) {
             callbackCaller = new CallbackCaller<T, R>(listener);
         } else {
