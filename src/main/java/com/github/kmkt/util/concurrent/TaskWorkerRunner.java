@@ -99,7 +99,7 @@ public class TaskWorkerRunner<T, R> {
             try {
                 runningTasks.incrementAndGet();
 
-                TaskWorker<T, R> task = workerSupplier.supply();    // TaskWorker 取得
+                TaskWorker<T, R> task = workerSupplier.get();    // TaskWorker 取得
                 R result = null;
                 if (task != null) {
                     result =  task.doTask(req);

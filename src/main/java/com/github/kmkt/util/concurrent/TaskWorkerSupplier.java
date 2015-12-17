@@ -10,5 +10,5 @@ public interface TaskWorkerSupplier<T, R> {
      * タスク処理の実体 TaskWorker を返す
      * @return タスク処理の実体 TaskWorker
      */
-    TaskWorker<T, R> supply();
+    TaskWorker<T, R> get();
 }
