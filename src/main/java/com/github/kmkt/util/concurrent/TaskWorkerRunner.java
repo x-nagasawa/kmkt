@@ -152,7 +152,11 @@ public class TaskWorkerRunner<T, R> {
             try {
                 while (true) {
                     Pair ele = queue.take();    // block
-                    listener.onComplete(ele.t, ele.r);  // callback
+                    try {
+                        listener.onComplete(ele.t, ele.r);  // callback
+                    } catch (Exception e) {
+                        logger.error("Unexpedted exception in TaskCompleteListener callback", e);
+                    }
                 }
             } catch (InterruptedException e) {
                 // exit loop by interruption
