@@ -305,7 +305,9 @@ public class TaskWorkerRunner<T, R> {
         List<Runnable> remain = pool.shutdownNow();
         List<T> result = new ArrayList<T>(remain.size());
         for (Runnable r : remain) {
-            result.add(((CallbackFutureTask) r).getTaskReq());
+            if (!(r instanceof CallbackCaller)) {
+                result.add(((CallbackFutureTask) r).getTaskReq());
+            }
         }
         return result;
     }
