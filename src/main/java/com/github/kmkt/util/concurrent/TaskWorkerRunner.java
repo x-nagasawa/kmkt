@@ -103,10 +103,10 @@ public class TaskWorkerRunner<T, R> {
                 runningTasks.incrementAndGet();
                 worker = workerSupplier.get();    // TaskWorker 取得
 
-                R result = null;
-                if (worker != null) {
-                    result =  worker.doTask(req);
-                }
+                if (worker == null)
+                    throw new TaskWorkerStartException("TaskWorkerSupplier returns null", req);
+
+                R result = worker.doTask(req);
                 return result;
             } finally {
                 if (workerCollector != null && worker != null)
