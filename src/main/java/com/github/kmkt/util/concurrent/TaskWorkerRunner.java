@@ -149,6 +149,7 @@ public class TaskWorkerRunner<T, R> {
 
         @Override
         public void run() {
+            logger.debug("Start task complete callback thread");
             try {
                 while (true) {
                     Pair ele = queue.take();    // block
@@ -157,9 +158,17 @@ public class TaskWorkerRunner<T, R> {
                     } catch (Exception e) {
                         logger.error("Unexpedted exception in TaskCompleteListener callback", e);
                     }
+                    if (Thread.interrupted())
+                        break;  // exit loop by interruption
                 }
             } catch (InterruptedException e) {
                 // exit loop by interruption
+            } finally {
+                if (Thread.interrupted()) {
+                    logger.debug("Exit task complete callback thread by thread interruption");
+                } else {
+                    logger.debug("Exit task complete callback thread");
+                }
             }
         }
 
