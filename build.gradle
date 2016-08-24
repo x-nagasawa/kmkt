@@ -32,3 +32,27 @@ dependencies {
 jar {
     baseName = 'commons'
 }
+
+javadoc {
+    options {
+        encoding(defaultEncoding)
+        charSet(defaultEncoding)
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    baseName = 'commons'
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    baseName = 'commons'
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
