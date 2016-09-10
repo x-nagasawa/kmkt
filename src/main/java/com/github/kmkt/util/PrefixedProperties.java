@@ -40,6 +40,7 @@ public class PrefixedProperties extends Properties {
 
     public PrefixedProperties(Properties initprop) {
         super(initprop);
+        parseKeys();
     }
 
     /**
@@ -59,7 +60,8 @@ public class PrefixedProperties extends Properties {
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private void parseKeys() {
-        for (Enumeration<Object> o = super.keys(); o.hasMoreElements();) {
+        children.clear();
+        for (Enumeration<?> o = super.propertyNames(); o.hasMoreElements();) {
             String keyname = (String) o.nextElement();
             String[] parts = keyname.split("\\.");
             Map<String, Map> focus = children;
@@ -124,10 +126,12 @@ public class PrefixedProperties extends Properties {
      */
     public Set<String> getKeys(String prefix) {
         Set<String> result = new HashSet<String>();
-        for (Object keys : super.keySet()) {
-            if (keys.toString().startsWith(prefix))
-                result.add(keys.toString());
+        for (Enumeration<?> o = super.propertyNames(); o.hasMoreElements();) {
+            Object keyname = o.nextElement();
+            if (keyname.toString().startsWith(prefix))
+                result.add(keyname.toString());
         }
+
         return result;
     }
 }
