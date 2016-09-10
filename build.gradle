@@ -1,8 +1,10 @@
 // Apply the java plugin to add support for Java
 apply plugin: 'java'
 
-sourceCompatibility = '1.7'
-targetCompatibility = '1.7'
+
+if (JavaVersion.current() < JavaVersion.VERSION_1_7) {
+    throw new GradleException('Required Java7 or later')
+}
 
 def defaultEncoding = 'UTF-8'
 [compileJava, compileTestJava]*.options*.encoding = defaultEncoding
@@ -56,3 +58,14 @@ artifacts {
     archives javadocJar
     archives sourcesJar
 }
+
+def dependenciesCopyTargetDirName = 'mavenlibs'
+task deleteMavenlibs(type: Delete) {
+  delete dependenciesCopyTargetDirName
+}
+
+task copyMavenlibs(type: Copy, dependsOn: deleteMavenlibs) {
+  from configurations.testRuntime
+  into dependenciesCopyTargetDirName
+}
+
