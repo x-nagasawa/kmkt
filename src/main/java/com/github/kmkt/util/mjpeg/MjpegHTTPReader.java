@@ -334,7 +334,7 @@ public class MjpegHTTPReader {
                     }
                     if (StatisticsDispleyPeriod < System.currentTimeMillis() - last_shown_statistics) {
                         last_shown_statistics = System.currentTimeMillis();
-                        logger.debug("Statistics [Frames Recv: {}, Send: {}, Drop: {}, Size Recv: {}, Send: {}]", 
+                        logger.debug("Statistics [Frames Recv: {}, Send: {}, Error: {}, Size Recv: {}, Send: {}]",
                                 recv_frames, notify_frames, error_frames,
                                 recv_bytes, notify_bytes);
                     }
