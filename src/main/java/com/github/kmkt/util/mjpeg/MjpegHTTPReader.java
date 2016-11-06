@@ -150,17 +150,19 @@ public class MjpegHTTPReader {
             HttpEntity entity = response.getEntity();
             String[] content_type = entity.getContentType().getValue().split("\\s*;\\s*");
 
+            logger.debug("Content-type '{}'", entity.getContentType().getValue());
+
             if (!"multipart/x-mixed-replace".equals(content_type[0])) {
                 httpget.abort();
                 throw new IOException("Content-type is not multipart/x-mixed-replace but " + content_type[0]);
             }
-            if (!content_type[1].startsWith("boundary=")) {
+            if (!content_type[1].matches("^boundary\\s*=\\s*.+$")) {
                 httpget.abort();
                 throw new IOException("Content-type should have boundary option");
             }
 
             // boundary バイト列作成
-            String boundary_str = "--"+content_type[1].replaceFirst("boundary=", "");
+            String boundary_str = "--"+content_type[1].replaceFirst("boundary\\s*=\\s*(--)?", "");
             ByteArrayOutputStream b = new ByteArrayOutputStream();
             b.write(boundary_str.getBytes());
             b.write((byte) 0x0d);
