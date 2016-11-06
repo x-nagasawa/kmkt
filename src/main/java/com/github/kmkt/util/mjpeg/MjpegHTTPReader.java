@@ -8,10 +8,15 @@ import java.util.Arrays;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,9 +64,10 @@ public class MjpegHTTPReader {
     private RecvFrameCallback recv_callback = null;
     private StateChangeCallback state_callback = null;
 
+    private Credentials credential = null;
 
     /**
-     * 
+     * URL から MJPEG を受信するインスタンスを生成する
      * @param target MJPEG 配信元 URL
      * @param recv_callback フレーム受信毎に呼び出される callback
      * @param state_callback 状態変化時に呼び出される callback
@@ -74,6 +80,28 @@ public class MjpegHTTPReader {
         this.recv_callback = recv_callback;
         this.state_callback = state_callback;
     }
+
+    /**
+     * Basic 認証付き URL から MJPEG を受信するインスタンスを生成する
+     * @param target MJPEG 配信元 URL
+     * @param recv_callback フレーム受信毎に呼び出される callback
+     * @param state_callback 状態変化時に呼び出される callback
+     * @param user Basic 認証ユーザ名 null 時は Basic認証を行わない
+     * @param pass Basic 認証パスワード null 時は Basic認証を行わない
+     */
+    public MjpegHTTPReader(URI target, RecvFrameCallback recv_callback, StateChangeCallback state_callback, String user, String pass) {
+        if (target == null)
+            throw new IllegalArgumentException("target should not be null");
+
+        this.target = target;
+        this.recv_callback = recv_callback;
+        this.state_callback = state_callback;
+
+        if (user != null && pass != null) {
+            this.credential = new UsernamePasswordCredentials(user, pass);
+        }
+    }
+
 
     public synchronized boolean isActive() {
         if (this.streamReadLoop == null)
@@ -99,7 +127,14 @@ public class MjpegHTTPReader {
         RequestConfig config = RequestConfig.custom()
                 .setConnectTimeout(connecte_timeout)
                 .setSocketTimeout(read_timeout).build();
-        HttpClient httpclient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+        HttpClient httpclient;
+        if (credential == null) {
+            httpclient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+        } else {
+            CredentialsProvider provider = new BasicCredentialsProvider();
+            provider.setCredentials(AuthScope.ANY, credential);
+            httpclient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).setDefaultRequestConfig(config).build();
+        }
 
         HttpGet httpget = new HttpGet(target);
         try {
