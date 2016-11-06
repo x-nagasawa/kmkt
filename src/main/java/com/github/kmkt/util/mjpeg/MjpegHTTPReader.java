@@ -112,7 +112,7 @@ public class MjpegHTTPReader {
 
     /**
      * MJPEG の受信を開始する
-     * 
+     *
      * @param connecte_timeout 接続タイムアウト
      * @param read_timeout Socket Reead タイムアウト
      * @throws ClientProtocolException
@@ -183,7 +183,7 @@ public class MjpegHTTPReader {
 
     public synchronized void stop() throws InterruptedException, IOException {
         if (!isActive())
-            return;        
+            return;
         streamReadLoop.requestStop();
         streamReadLoop.join();
         streamReadLoop = null;
@@ -200,7 +200,7 @@ public class MjpegHTTPReader {
         private volatile boolean threadLoop = true;
 
         /**
-         * 
+         *
          * @param is 元InputStream
          * @param boundary 境界バイト列
          * @param recv_callback ブロック受信時の callback  null では呼ばれない
@@ -220,11 +220,11 @@ public class MjpegHTTPReader {
 
         /**
          * 受信停止を要求する
-         * @throws IOException 
+         * @throws IOException
          */
         public void requestStop() throws IOException {
             threadLoop = false;
-            if (this.getState() == Thread.State.BLOCKED || 
+            if (this.getState() == Thread.State.BLOCKED ||
                 this.getState() == Thread.State.WAITING ||
                 this.getState() == Thread.State.TIMED_WAITING) {
                 streamReadLoop.interrupt();
@@ -240,7 +240,7 @@ public class MjpegHTTPReader {
             long notify_frames = 0;
             long notify_bytes = 0;
             long last_shown_statistics = System.currentTimeMillis();
-            
+
             logger.info("Start recv thread");
             try {
                 byte[] deleimter_of_header = new byte[]{(byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a};
