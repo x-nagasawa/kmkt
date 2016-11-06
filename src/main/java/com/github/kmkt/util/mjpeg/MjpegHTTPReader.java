@@ -306,12 +306,14 @@ public class MjpegHTTPReader {
                             }
                         }
                     }
+                    found_EOI:
                     for (int i = recv_block.length - EOI.length; pos_soi < i; i--) {
                         for (int j = 0; j < EOI.length && i + j < recv_block.length; j++) {
                             if (recv_block[i + j] != EOI[j])
                                 break;
                             if (j == EOI.length - 1) {  // found eoi
                                 pos_eoi = i;
+                                break found_EOI;
                             }
                         }
                     }
