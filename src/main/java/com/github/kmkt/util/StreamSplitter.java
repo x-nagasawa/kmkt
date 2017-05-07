@@ -6,11 +6,11 @@ import java.util.Arrays;
 
 /**
  * InputStream を指定されたデリミタ(byte[])で個別の InputStream に分割する。
- * 
+ * mod 演算高速化のためバッファサイズ調整版
  * <pre>
  * 非スレッドセーフ
  * </pre>
- * 
+ *
  * License : MIT License
  */
 public class StreamSplitter implements AutoCloseable {
@@ -21,6 +21,7 @@ public class StreamSplitter implements AutoCloseable {
 
     private static final int BUF_SIZE = 4*1024;
     private byte[] ringBufffer = null;
+    private int modMask = 0;
 
     private int avalableBufSize = 0;    // 読み込み済みサイズ
     private int avalableSize = 0;       // 検索済みサイズ
@@ -31,7 +32,7 @@ public class StreamSplitter implements AutoCloseable {
     private boolean inputEoS = false;   // 元InputStream終端フラグ
 
     /**
-     * 
+     *
      * @param is
      * @param delimiter
      */
@@ -40,7 +41,7 @@ public class StreamSplitter implements AutoCloseable {
     }
 
     /**
-     * 
+     *
      * @param is
      * @param delimiter
      * @param buf_size
@@ -52,6 +53,16 @@ public class StreamSplitter implements AutoCloseable {
             throw new IllegalArgumentException("delimiter should not be null");
         if (buf_size < delimiter.length*4)
             throw new IllegalArgumentException("buf_size should be 4 times larger than delimiter size");
+
+        // 指定の buf_size が収まる 2^n サイズにバッファサイズを調整
+        int mod_mask = buf_size - 1;
+        mod_mask |= (mod_mask >>> 1);
+        mod_mask |= (mod_mask >>> 2);
+        mod_mask |= (mod_mask >>> 4);
+        mod_mask |= (mod_mask >>> 6);
+        mod_mask |= (mod_mask >>> 16);
+        buf_size = mod_mask + 1;
+        this.modMask = mod_mask;
 
         this.inputStream = is;
         this.delimiter = Arrays.copyOf(delimiter, delimiter.length);
@@ -81,16 +92,16 @@ public class StreamSplitter implements AutoCloseable {
 
         // バカサーチ パフォーマンス出ない場合は簡易BM, Quick Search等に
         for (int i = 0; i <= search_range; i++) {
-            int pos = (stpos + i) % ringBufffer.length;
+            int pos = (stpos + i) & modMask;
             boolean found = true;
             for (int j = 0; j < delimiter.length; j++) {
-                if (ringBufffer[(pos + j) % ringBufffer.length] != delimiter[j]) {
+                if (ringBufffer[(pos + j) & modMask] != delimiter[j]) {
                     found = false;
                     break;
                 }
             }
             if (found)
-                return (pos % ringBufffer.length);
+                return (pos & modMask);
         }
         return -1;
     }
@@ -160,7 +171,7 @@ public class StreamSplitter implements AutoCloseable {
     private boolean writeRingBuffer(byte c) {
         if (avalableBufSize == ringBufffer.length)
             return false;   // full
-        int pos = (readPos + avalableBufSize) % ringBufffer.length;
+        int pos = (readPos + avalableBufSize) & modMask;
         ringBufffer[pos] = c;
         avalableBufSize++;
         return true;
@@ -228,7 +239,7 @@ public class StreamSplitter implements AutoCloseable {
             return;
         }
 
-        int edpos = (readPos + avalableBufSize - 1) % ringBufffer.length;    // 有効範囲末
+        int edpos = (readPos + avalableBufSize - 1) & modMask;    // 有効範囲末
         int delimiterpos = searchDelimiter(searchPos, edpos);   // 検索
 
         if (delimiterpos == -1) {
@@ -256,7 +267,7 @@ public class StreamSplitter implements AutoCloseable {
             avalableSize += len;
 
             // 次検索開始はデリミタの後ろから
-            searchPos = (delimiterpos + delimiter.length) % ringBufffer.length;
+            searchPos = (delimiterpos + delimiter.length) & modMask;
         }
     }
 }
