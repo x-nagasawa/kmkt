@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 /**
  * InputStream を指定されたデリミタ(byte[])で個別の InputStream に分割する。
- * mod 演算高速化のためバッファサイズ調整版
+ * mod 演算高速化のためバッファサイズ調整 + QuickSearch化
  * <pre>
  * 非スレッドセーフ
  * </pre>
@@ -15,6 +15,9 @@ import java.util.Arrays;
  */
 public class StreamSplitter implements AutoCloseable {
     private byte[] delimiter = null;        // デリミタ
+    private int delimiterLength;            // デリミタ長
+    private int[] skipTable = new int[256]; // デリミタに対応するQuickSearch用シフトテーブル
+
     private InputStream inputStream = null; // 元InputStream
 
     private InnerInputStream childStream = null;    // 分割後のInputStream
@@ -66,7 +69,16 @@ public class StreamSplitter implements AutoCloseable {
 
         this.inputStream = is;
         this.delimiter = Arrays.copyOf(delimiter, delimiter.length);
+        this.delimiterLength = this.delimiter.length;
         this.ringBufffer = new byte[buf_size];
+
+        // delimiter に対応する QuickSearch シフトテーブル作成
+        for (int i = 0; i < this.skipTable.length; i++) {
+            this.skipTable[i] = delimiter.length + 1;
+        }
+        for (int i = 0; i < delimiter.length; i++) {
+            this.skipTable[delimiter[i]] = delimiter.length - i;
+        }
     }
 
     /**
@@ -90,18 +102,19 @@ public class StreamSplitter implements AutoCloseable {
         if (search_range < 0)
             return -1;
 
-        // バカサーチ パフォーマンス出ない場合は簡易BM, Quick Search等に
-        for (int i = 0; i <= search_range; i++) {
+        // Quick Search
+        for (int i = 0; i <= search_range;) {
             int pos = (stpos + i) & modMask;
-            boolean found = true;
-            for (int j = 0; j < delimiter.length; j++) {
-                if (ringBufffer[(pos + j) & modMask] != delimiter[j]) {
-                    found = false;
+            for (int j = 0; j < delimiterLength; j++) {
+                if (ringBufffer[(pos + j) & modMask] == delimiter[j]) {
+                    if (j == delimiterLength - 1) {
+                        return (pos & modMask);
+                    }
+                } else {
+                    i += skipTable[ringBufffer[(pos + delimiterLength) & modMask] & 0xff];
                     break;
                 }
             }
-            if (found)
-                return (pos & modMask);
         }
         return -1;
     }
