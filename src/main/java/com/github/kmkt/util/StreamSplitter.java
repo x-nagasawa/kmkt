@@ -3,10 +3,10 @@ package com.github.kmkt.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * InputStream を指定されたデリミタ(byte[])で個別の InputStream に分割する。
- * mod 演算高速化のためバッファサイズ調整 + QuickSearch化
  * <pre>
  * 非スレッドセーフ
  * </pre>
@@ -174,20 +174,38 @@ public class StreamSplitter implements AutoCloseable {
             }
             return c;
         }
-    }
 
-    /**
-     * RingBufferへの書き込み
-     * @param c
-     * @return
-     */
-    private boolean writeRingBuffer(byte c) {
-        if (avalableBufSize == ringBufffer.length)
-            return false;   // full
-        int pos = (readPos + avalableBufSize) & modMask;
-        ringBufffer[pos] = c;
-        avalableBufSize++;
-        return true;
+        @Override
+        public int read(byte[] b) throws IOException {
+            return read(b, 0, b.length);
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            Objects.requireNonNull(b);
+            if (off < 0)
+                throw new IllegalArgumentException("off must be zero or positive");
+            if (len < 0)
+                throw new IllegalArgumentException("len must be zero or positive");
+            if (b.length < off + len)
+                throw new IllegalArgumentException("off + len must be less than or equal to b.length");
+            if (len == 0)
+                return 0;
+
+            if (eos || readPos == delimiterPos) {
+                eos = true;
+                return -1;
+            }
+
+            if (!inputEoS && (avalableSize <= 0)) {
+                readNextBlock();
+            }
+            int c = readRingBuffer(b, off, len);
+            if (c == -1) {
+                eos = true;
+            }
+            return c;
+        }
     }
 
     /**
@@ -210,36 +228,68 @@ public class StreamSplitter implements AutoCloseable {
     }
 
     /**
+     * RingBufferから読み出し
+     * @return
+     */
+    private int readRingBuffer(byte[] b, int off, int len) {
+        if (avalableBufSize == 0 || avalableSize == 0)
+            return -1;  // empty
+
+        // 読み込み長と読み込み可能長で短い方を採用
+        len = len < avalableSize ? len : avalableSize;
+
+        if (ringBufffer.length < readPos + len) {
+            // 分割必要
+            // readPos -> ringBufffer limit
+            int buf_len = ringBufffer.length - readPos;
+            System.arraycopy(ringBufffer, readPos, b, off, buf_len);
+            off += buf_len;
+
+            // 0 -> limit
+            buf_len = len - buf_len;
+            System.arraycopy(ringBufffer, 0, b, off, buf_len);
+        } else {
+            // 分割不要
+            System.arraycopy(ringBufffer, readPos, b, off, len);
+        }
+        readPos = (readPos + len) & modMask;
+        avalableBufSize -= len;
+        avalableSize -= len;
+        return len;
+    }
+
+
+    /**
      * 元InputStreamからRingBufferの空き部分に読み込む
      * @throws IOException
      */
     private void readNextBlock() throws IOException {
         if (inputEoS)
-            return;
+            return;     // 入力側EOS
 
-        int limit = ringBufffer.length - avalableBufSize;
+        if (avalableBufSize == ringBufffer.length)
+            return;     // buffer is full
 
-        int i = 0;
-        IOException e = null;
-        try {
-            for (i = 0; i < limit; i++) {
-                int c = inputStream.read();
-                if (c == -1) {
-                    inputEoS = true;    // 入力側EOS
-                    break;
-                }
-                writeRingBuffer((byte) (c & 0x00ff));
+        int write_pos = (readPos + avalableBufSize) & modMask;
+        int empty_size = ringBufffer.length - avalableBufSize;
+
+        while (0 < empty_size) {
+            int buf_len = empty_size;
+            if (ringBufffer.length < write_pos + buf_len) {
+                // 分割必要
+                // write_pos -> ringBufffer limit
+                buf_len = ringBufffer.length - write_pos;
             }
-        } catch (IOException e2) {
-            if (i == 0) {
-                throw e2;   // 初回読み込みでの例外はそのまま投げる
-            } else {
-                e = e2; // それ以外は次の処理を終えてから
+            int read_len = inputStream.read(ringBufffer, write_pos, buf_len);
+            if (read_len == -1) {
+                inputEoS = true;    // 入力側EOS
+                break;
             }
+            avalableBufSize += read_len;
+            empty_size -= read_len;
+            write_pos = (write_pos + read_len) & modMask;
         }
         searchNextDelimiter();
-        if (e != null)
-            throw e;
     }
 
     /**
