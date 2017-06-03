@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -26,7 +27,7 @@ import com.github.kmkt.util.StreamSplitter;
 
 /**
  * MJPEG over HTTP ストリームを受け取り、callback するクラス
- * 
+ *
  * License : MIT License
  */
 public class MjpegHTTPReader {
@@ -35,6 +36,7 @@ public class MjpegHTTPReader {
     /**
      * フレーム受信毎に呼び出される callback interface
      */
+    @FunctionalInterface
     public interface RecvFrameCallback {
         /**
          * フレーム受信毎に呼び出される callback
@@ -44,83 +46,199 @@ public class MjpegHTTPReader {
     }
 
     /**
-     * 状態変化時に呼び出される callback interface
+     * フレーム受信毎に呼び出される callback interface
      */
-    public interface StateChangeCallback {
+    @FunctionalInterface
+    public interface RecvFrameOnBufferCallback {
         /**
-         * ストリーム終了時に呼び出される callback
+         * フレーム受信毎に呼び出される callback
+         * @param b JPEG フレームが格納されるバッファ
+         * @param off b 内の JPEG フレーム開始位置
+         * @param len b 内の JPEG フレームサイズ
          */
+        void onRecvFrame(byte[] b, int off, int len);
+    }
+
+    /**
+     * ストリーム受信終了時に呼び出される callback
+     */
+    @FunctionalInterface
+    public interface StreamClosedCallback {
         void onStreamClosed();
-        /**
-         * 受信スレッド終了時に呼び出される callback
-         */
+    }
+
+    /**
+     * 受信スレッド終了時に呼び出される callback
+     */
+    public interface ThreadTerminatedCallback {
         void onFinished();
     }
 
-    public static long StatisticsDispleyPeriod = 60*1000;   // 
+    /** 集計情報のログ出力間隔 (ms)*/
+    public static long StatisticsDispleyPeriod = 60*1000;
+    /** 標準の受信バッファサイズ (バイト) */
+    public static final int DEFAULT_BUFFER_SIZE = 128*1024;
 
+    /** MJPEG 配信元 URL */
     private URI target = null;
-    private StreamReaderThread streamReadLoop = null;
-    private RecvFrameCallback recv_callback = null;
-    private StateChangeCallback state_callback = null;
-
+    /** BASIC 認証認証情報 */
     private Credentials credential = null;
 
-    /**
-     * URL から MJPEG を受信するインスタンスを生成する
-     * @param target MJPEG 配信元 URL
-     * @param recv_callback フレーム受信毎に呼び出される callback
-     * @param state_callback 状態変化時に呼び出される callback
-     */
-    public MjpegHTTPReader(URI target, RecvFrameCallback recv_callback, StateChangeCallback state_callback) {
-        if (target == null)
-            throw new IllegalArgumentException("target should not be null");
+    /** 受信スレッド */
+    private Thread streamReadThread = null;
+    /** スレッドループ有効フラグ */
+    private volatile boolean threadLoop = true;
 
-        this.target = target;
-        this.recv_callback = recv_callback;
-        this.state_callback = state_callback;
+    /** フレーム受信バッファサイズ (byte) */
+    private int receiveBufferSize = DEFAULT_BUFFER_SIZE;
+
+    /** フレーム受信毎に呼び出される callback */
+    private RecvFrameCallback recvCallback = null;
+    /** フレーム受信毎に呼び出される callback */
+    private RecvFrameOnBufferCallback recvOnBufferCallback = null;
+    /** ストリーム受信終了時に呼び出される callback */
+    private StreamClosedCallback streamClosedCallback = null;
+    /** 受信スレッド終了時に呼び出される callback */
+    private ThreadTerminatedCallback threadTerminatedCallback = null;
+
+
+    /**
+     * target URL から MJPEG を受信するインスタンスを生成する。
+     *
+     * 受信できた JPEG フレームは recv_callback で指定された callback に渡される。
+     * 受信バッファサイズは DEFAULT_BUFFER_SIZE となり、 callback には受信バッファ内の
+     * JPEG フレームのコピーが渡される。
+     *
+     * @param target MJPEG 配信元 URL notnull
+     * @param recv_callback フレーム受信毎に呼び出される callback null 時は無視される
+     * @param stream_closed_callback 状態変化時に呼び出される callback null 時は無視される
+     * @param thread_terminated_callback 受信スレッド終了時に呼び出される callback null 時は無視される
+     * @throws NullPointerException target == null 時
+     */
+    public MjpegHTTPReader(URI target, RecvFrameCallback recv_callback,
+            StreamClosedCallback stream_closed_callback, ThreadTerminatedCallback thread_terminated_callback) {
+        this(target, recv_callback, stream_closed_callback, thread_terminated_callback, null, null);
     }
 
     /**
-     * Basic 認証付き URL から MJPEG を受信するインスタンスを生成する
-     * @param target MJPEG 配信元 URL
-     * @param recv_callback フレーム受信毎に呼び出される callback
-     * @param state_callback 状態変化時に呼び出される callback
+     * Basic 認証付き target URL から MJPEG を受信するインスタンスを生成する。
+     *
+     * 受信できた JPEG フレームは recv_callback で指定された callback に渡される。
+     * 受信バッファサイズは DEFAULT_BUFFER_SIZE となり、 callback には受信バッファ内の
+     * JPEG フレームのコピーが渡される。
+     *
+     * @param target MJPEG 配信元 URL notnull
+     * @param recv_callback フレーム受信毎に呼び出される callback null 時は無視される
+     * @param stream_closed_callback 状態変化時に呼び出される callback null 時は無視される
+     * @param thread_terminated_callback 受信スレッド終了時に呼び出される callback null 時は無視される
      * @param user Basic 認証ユーザ名 null 時は Basic認証を行わない
      * @param pass Basic 認証パスワード null 時は Basic認証を行わない
+     * @throws NullPointerException target == null 時
      */
-    public MjpegHTTPReader(URI target, RecvFrameCallback recv_callback, StateChangeCallback state_callback, String user, String pass) {
-        if (target == null)
-            throw new IllegalArgumentException("target should not be null");
+    public MjpegHTTPReader(URI target, RecvFrameCallback recv_callback,
+            StreamClosedCallback stream_closed_callback, ThreadTerminatedCallback thread_terminated_callback,
+            String user, String pass) {
+        this(target, stream_closed_callback, thread_terminated_callback, user, pass);
+
+        this.recvCallback = recv_callback;
+    }
+
+    /**
+     * target URL から MJPEG を受信するインスタンスを生成する。
+     *
+     * JPEG フレームを含む受信データと JPEG フレーム位置が recv_callback で指定された callback に渡される。
+     * callback に渡されるバイト配列は原則として受信バッファそのものが渡されるため、必要があればコピーを作成すること。
+     * 受信バッファが溢れる場合には、動的バッファに切り替えられるためデータロスは生じない（メモリ消費量は増加する）。
+     *
+     * @param target MJPEG 配信元 URL notnull
+     * @param recv_buffer_size 受信バッファサイズ(バイト) 1 以上の整数
+     * @param recv_callback フレーム受信毎に呼び出される callback null 時は無視される
+     * @param stream_closed_callback 状態変化時に呼び出される callback null 時は無視される
+     * @param thread_terminated_callback 受信スレッド終了時に呼び出される callback null 時は無視される
+     * @throws NullPointerException target == null 時
+     * @throws IllegalArgumentException recv_buffer_size に 0 以下を与えた場合
+     */
+    public MjpegHTTPReader(URI target, int recv_buffer_size, RecvFrameOnBufferCallback recv_callback,
+            StreamClosedCallback stream_closed_callback, ThreadTerminatedCallback thread_terminated_callback) {
+        this(target, recv_buffer_size, recv_callback, stream_closed_callback, thread_terminated_callback, null, null);
+    }
+
+    /**
+     * Basic 認証付き target URL から MJPEG を受信するインスタンスを生成する。
+     *
+     * JPEG フレームを含む受信データと JPEG フレーム位置が recv_callback で指定された callback に渡される
+     * callback に渡されるバイト配列は受信バッファそのものが渡されるため、必要があればコピーを作成すること。
+     * 受信バッファが溢れる場合には、動的バッファに切り替えられるためデータロスは生じない（メモリ消費量は増加する）。
+     *
+     * @param target MJPEG 配信元 URL notnull
+     * @param recv_buffer_size 受信バッファサイズ(バイト) 1 以上の整数
+     * @param recv_callback フレーム受信毎に呼び出される callback null 時は無視される
+     * @param stream_closed_callback 状態変化時に呼び出される callback null 時は無視される
+     * @param thread_terminated_callback 受信スレッド終了時に呼び出される callback null 時は無視される
+     * @param user Basic 認証ユーザ名 null 時は Basic認証を行わない
+     * @param pass Basic 認証パスワード null 時は Basic認証を行わない
+     * @throws NullPointerException target == null 時
+     * @throws IllegalArgumentException recv_buffer_size に 0 以下を与えた場合
+     */
+    public MjpegHTTPReader(URI target, int recv_buffer_size, RecvFrameOnBufferCallback recv_callback,
+            StreamClosedCallback stream_closed_callback, ThreadTerminatedCallback thread_terminated_callback,
+            String user, String pass) {
+        this(target, stream_closed_callback, thread_terminated_callback, user, pass);
+        if (recv_buffer_size <= 0)
+            throw new IllegalArgumentException("recv_buffer_size must be positive");
+
+        this.recvOnBufferCallback = recv_callback;
+        this.receiveBufferSize = recv_buffer_size;
+    }
+
+    /**
+     * 内部コンストラクタ
+     *
+     * @param target MJPEG 配信元 URL notnull
+     * @param stream_closed_callback 状態変化時に呼び出される callback null 時は無視される
+     * @param thread_terminated_callback 受信スレッド終了時に呼び出される callback null 時は無視される
+     * @param user Basic 認証ユーザ名 null 時は Basic認証を行わない
+     * @param pass Basic 認証パスワード null 時は Basic認証を行わない
+     * @throws NullPointerException target == null 時
+     */
+    private MjpegHTTPReader(URI target,
+            StreamClosedCallback stream_closed_callback, ThreadTerminatedCallback thread_terminated_callback,
+            String user, String pass) {
+        Objects.requireNonNull(target, "target should not be null");
 
         this.target = target;
-        this.recv_callback = recv_callback;
-        this.state_callback = state_callback;
+        this.streamClosedCallback = stream_closed_callback;
+        this.threadTerminatedCallback = thread_terminated_callback;
 
         if (user != null && pass != null) {
             this.credential = new UsernamePasswordCredentials(user, pass);
         }
     }
 
-
+    /**
+     * MJPEG の受信中か否かを返す。
+     *
+     * @return true 受信中 false それ以外（{@link #start(int, int)}前あるいは {@link #stop()} 後）
+     */
     public synchronized boolean isActive() {
-        if (this.streamReadLoop == null)
-            return false;
-
-        return this.streamReadLoop.isAlive();
+        return (this.streamReadThread != null && threadLoop);
     }
 
     /**
-     * MJPEG の受信を開始する
+     * MJPEG の受信を開始する。
      *
-     * @param connecte_timeout 接続タイムアウト
-     * @param read_timeout Socket Reead タイムアウト
+     * @param connecte_timeout 接続タイムアウト (ms) 1以上の整数
+     * @param read_timeout Socket Read タイムアウト (ms) 1以上の整数
+     * @throws IllegalArgumentException connecte_timeout, read_timeout に 0 以下を与えた場合
+     * @throws IllegalStateException 既に受信中の場合
      * @throws ClientProtocolException
      * @throws IOException
      */
     public synchronized void start(int connecte_timeout, int read_timeout) throws ClientProtocolException, IOException {
         if (connecte_timeout < 0)
-            throw new IllegalArgumentException("connecte_timeout should be positive");
+            throw new IllegalArgumentException("connecte_timeout must be positive");
+        if (read_timeout < 0)
+            throw new IllegalArgumentException("read_timeout must be positive");
         if (isActive())
             throw new IllegalStateException("Already started");
 
@@ -137,40 +255,10 @@ public class MjpegHTTPReader {
         }
 
         HttpGet httpget = new HttpGet(target);
+        HttpResponse response;
         try {
             // GET リクエスト
-            HttpResponse response = httpclient.execute(httpget);
-
-            int status = response.getStatusLine().getStatusCode();
-            if (status != 200) {
-                httpget.abort();
-                throw new IOException("HTTP Response is not 200 but " + status);
-            }
-
-            HttpEntity entity = response.getEntity();
-            String[] content_type = entity.getContentType().getValue().split("\\s*;\\s*");
-
-            logger.debug("Content-type '{}'", entity.getContentType().getValue());
-
-            if (!"multipart/x-mixed-replace".equals(content_type[0])) {
-                httpget.abort();
-                throw new IOException("Content-type is not multipart/x-mixed-replace but " + content_type[0]);
-            }
-            if (!content_type[1].matches("^boundary\\s*=\\s*.+$")) {
-                httpget.abort();
-                throw new IOException("Content-type should have boundary option");
-            }
-
-            // boundary バイト列作成
-            String boundary_str = "--"+content_type[1].replaceFirst("boundary\\s*=\\s*(--)?", "");
-            ByteArrayOutputStream b = new ByteArrayOutputStream();
-            b.write(boundary_str.getBytes());
-            b.write((byte) 0x0d);
-            b.write((byte) 0x0a);
-            byte[] boundary = b.toByteArray();
-
-            streamReadLoop = new StreamReaderThread(entity.getContent(), boundary, recv_callback, state_callback);
-            streamReadLoop.start();
+            response = httpclient.execute(httpget);
         } catch(ClientProtocolException e) {
             httpget.abort();
             throw e;
@@ -178,108 +266,111 @@ public class MjpegHTTPReader {
             httpget.abort();
             throw e;
         }
-    }
 
-
-    public synchronized void stop() throws InterruptedException, IOException {
-        if (!isActive())
-            return;
-        streamReadLoop.requestStop();
-        streamReadLoop.join();
-        streamReadLoop = null;
-    }
-
-    /**
-     * HTTP body を読み込み、MJPEGからJPEGを切り出す Thread
-     */
-    private class StreamReaderThread extends Thread {
-        private StreamSplitter splitter = null;
-        private InputStream inputStream = null;
-        private RecvFrameCallback recv_callback = null;
-        private StateChangeCallback state_callback = null;
-        private volatile boolean threadLoop = true;
-
-        /**
-         *
-         * @param is 元InputStream
-         * @param boundary 境界バイト列
-         * @param recv_callback ブロック受信時の callback  null では呼ばれない
-         * @param state_callback 状態変化時の callback
-         */
-        public StreamReaderThread(InputStream is, byte[] boundary, RecvFrameCallback recv_callback, StateChangeCallback state_callback) {
-            if (is == null)
-                throw new IllegalArgumentException("is should not be null");
-            if (boundary == null)
-                throw new IllegalArgumentException("boundary should not be null");
-
-            this.inputStream = is;
-            this.splitter = new StreamSplitter(is, boundary);
-            this.recv_callback = recv_callback;
-            this.state_callback = state_callback;
+        int status = response.getStatusLine().getStatusCode();
+        if (status != 200) {
+            httpget.abort();
+            throw new IOException("HTTP Response is not 200 but " + status);
         }
 
-        /**
-         * 受信停止を要求する
-         * @throws IOException
-         */
-        public void requestStop() throws IOException {
-            threadLoop = false;
-            if (this.getState() == Thread.State.BLOCKED ||
-                this.getState() == Thread.State.WAITING ||
-                this.getState() == Thread.State.TIMED_WAITING) {
-                streamReadLoop.interrupt();
-            }
-            splitter.close();
+        HttpEntity entity = response.getEntity();
+        String[] content_type = entity.getContentType().getValue().split("\\s*;\\s*");
+
+        logger.debug("Content-type '{}'", entity.getContentType().getValue());
+
+        if (!"multipart/x-mixed-replace".equals(content_type[0])) {
+            httpget.abort();
+            throw new IOException("Content-type is not multipart/x-mixed-replace but " + content_type[0]);
+        }
+        if (!content_type[1].matches("^boundary\\s*=\\s*.+$")) {
+            httpget.abort();
+            throw new IOException("Content-type should have boundary option");
         }
 
-        @Override
-        public void run() {
+        // boundary バイト列作成
+        String boundary_str = "--"+content_type[1].replaceFirst("boundary\\s*=\\s*(--)?", "");
+        ByteArrayOutputStream b = new ByteArrayOutputStream();
+        b.write(boundary_str.getBytes());
+        b.write((byte) 0x0d);
+        b.write((byte) 0x0a);
+        byte[] boundary = b.toByteArray();
+
+        threadLoop = true;
+        streamReadThread = new Thread(() -> {
+            logger.info("Start recv thread");
+
+            final byte[] SOI = new byte[]{(byte) 0xff, (byte) 0xd8};    // JPEG SOI
+            final byte[] EOI = new byte[]{(byte) 0xff, (byte) 0xd9};    // JPEG EOI
+            // multipart の ヘッダ/ボディ境界
+            final byte[] deleimter_of_header = new byte[]{(byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a};
+            // 計測カウンタ
             long recv_frames = 0;
             long recv_bytes = 0;
             long error_frames = 0;
             long notify_frames = 0;
             long notify_bytes = 0;
             long last_shown_statistics = System.currentTimeMillis();
+            // 受信バッファ
+            byte[] recv_buf = new byte[receiveBufferSize];
 
-            logger.info("Start recv thread");
-            try {
-                byte[] deleimter_of_header = new byte[]{(byte) 0x0d, (byte) 0x0a, (byte) 0x0d, (byte) 0x0a};
-                byte[] readbuf = new byte[4*1024];  // 読み出しバッファ
+            try (final InputStream source_stream = entity.getContent();
+                 final StreamSplitter splitter = new StreamSplitter(source_stream, boundary)) {
+
                 while (threadLoop) {
-                    int len = 0;
                     logger.trace("Wait next stream");
                     InputStream is = splitter.nextStream();
                     if (is == null) {
                         logger.info("Stream ended");
-                        if (state_callback != null) {
-                            state_callback.onStreamClosed();
+                        if (streamClosedCallback != null) {
+                            streamClosedCallback.onStreamClosed();
                         }
                         break;
                     }
 
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    // boundary 間のデータ受信
+                    int off = 0;
+                    ByteArrayOutputStream bos = null;   // recv_buf overflow 時用代替バッファ
 
-                    logger.trace("Wait recving");
+                    logger.trace("Wait receiving");
                     while (true) {
-                        len = is.read(readbuf);
+                        int len = is.read(recv_buf, off, recv_buf.length - off);
                         if (len == -1)
                             break;
-                        bos.write(readbuf, 0, len);
+
+                        if (bos != null) {
+                            bos.write(recv_buf, 0, len);
+                            off = 0;
+                        } else {
+                            off += len;
+                            if (recv_buf.length == off) {
+                                logger.debug("Pre-defined buffer is overflowed. Switch to ByteArrayOutputStream");
+                                // recv_buf overflow -> switch to ByteArrayOutputStream
+                                bos = new ByteArrayOutputStream();
+                                bos.write(recv_buf, 0, recv_buf.length);
+                            }
+                        }
                     }
-                    byte[] recv_block = bos.toByteArray();
-                    logger.trace("Recv {} byte", recv_block.length);
+
+                    int recv_size = off;
+                    if (bos != null) {
+                        recv_buf = bos.toByteArray();
+                        recv_size = recv_buf.length;
+                        bos = null;
+                    }
+
+                    logger.trace("Recv {} byte", recv_size);
 
                     recv_frames++;
-                    recv_bytes += recv_block.length;
+                    recv_bytes += recv_size;
 
                     // TODO multipart のヘッダ確認
 
                     // body 部の取り出し
                     int body_pos = -1;
                     found_jpegbody:
-                    for (int i = 0; i < recv_block.length; i++) {
-                        for (int j = 0; j < deleimter_of_header.length && i + j < recv_block.length; j++) {
-                            if (recv_block[i + j] != deleimter_of_header[j])
+                    for (int i = 0; i < recv_size; i++) {
+                        for (int j = 0; j < deleimter_of_header.length && i + j < recv_size; j++) {
+                            if (recv_buf[i + j] != deleimter_of_header[j])
                                 break;
                             if (j == deleimter_of_header.length - 1) {  // found delimiter
                                 body_pos = i + deleimter_of_header.length;
@@ -287,18 +378,19 @@ public class MjpegHTTPReader {
                             }
                         }
                     }
-                    if (body_pos < 0)
+                    if (body_pos < 0) {
+                        logger.warn("Invalid chunk received. Cannot found chunk body.");
+                        error_frames++;
                         continue;
+                    }
 
-                    // JPEG部のみ抽出
+                    // JPEG部の探索
                     int pos_soi = -1;
                     int pos_eoi = -1;
-                    byte[] SOI = new byte[]{(byte) 0xff, (byte) 0xd8};
-                    byte[] EOI = new byte[]{(byte) 0xff, (byte) 0xd9};
                     found_SOI:
-                    for (int i = body_pos; i < recv_block.length; i++) {
-                        for (int j = 0; j < SOI.length && i + j < recv_block.length; j++) {
-                            if (recv_block[i + j] != SOI[j])
+                    for (int i = body_pos; i < recv_size; i++) {
+                        for (int j = 0; j < SOI.length && i + j < recv_size; j++) {
+                            if (recv_buf[i + j] != SOI[j])
                                 break;
                             if (j == SOI.length - 1) {  // found soi
                                 pos_soi = i;
@@ -307,9 +399,9 @@ public class MjpegHTTPReader {
                         }
                     }
                     found_EOI:
-                    for (int i = recv_block.length - EOI.length; pos_soi < i; i--) {
-                        for (int j = 0; j < EOI.length && i + j < recv_block.length; j++) {
-                            if (recv_block[i + j] != EOI[j])
+                    for (int i = recv_size - EOI.length; pos_soi < i; i--) {    // 後ろから探索
+                        for (int j = 0; j < EOI.length && i + j < recv_size; j++) {
+                            if (recv_buf[i + j] != EOI[j])
                                 break;
                             if (j == EOI.length - 1) {  // found eoi
                                 pos_eoi = i;
@@ -323,12 +415,16 @@ public class MjpegHTTPReader {
                         error_frames++;
                         continue;
                     }
-                    byte[] jpeg_frame = Arrays.copyOfRange(recv_block, pos_soi, pos_eoi + 2);
+                    logger.trace("Frame size {} byte", pos_eoi + 2 - pos_soi);
 
-                    logger.trace("Frame size {} byte", jpeg_frame.length);
-
-                    if (recv_callback != null) {
-                        recv_callback.onRecvFrame(jpeg_frame);
+                    if (recvOnBufferCallback != null) {
+                        recvOnBufferCallback.onRecvFrame(recv_buf, pos_soi, pos_eoi + 2 - pos_soi);
+                        notify_frames++;
+                        notify_bytes += (pos_eoi + 2 - pos_soi);
+                    }
+                    if (recvCallback != null) {
+                        byte[] jpeg_frame = Arrays.copyOfRange(recv_buf, pos_soi, pos_eoi + 2);
+                        recvCallback.onRecvFrame(jpeg_frame);
                         notify_frames++;
                         notify_bytes += jpeg_frame.length;
                     }
@@ -343,17 +439,39 @@ public class MjpegHTTPReader {
                 if (threadLoop) {
                     logger.error("IOException when stream reading", e);
                 }
-            } finally {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    logger.error("IOException when stream closing", e);
-                }
             }
+            threadLoop = false;
             logger.info("Stop recv thread");
-            if (state_callback != null) {
-                state_callback.onFinished();
+            if (threadTerminatedCallback != null) {
+                threadTerminatedCallback.onFinished();
             }
+        });
+
+        streamReadThread.start();
+    }
+
+
+    /**
+     * MJPEG の受信を停止する。
+     *
+     * 受信していない場合は何もしない。
+     *
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    public synchronized void stop() throws InterruptedException, IOException {
+        if (!isActive())
+            return;
+
+        threadLoop = false;
+        Thread.State thread_state = streamReadThread.getState();
+        if (thread_state == Thread.State.BLOCKED ||
+            thread_state == Thread.State.WAITING ||
+            thread_state == Thread.State.TIMED_WAITING) {
+            streamReadThread.interrupt();
         }
+
+        streamReadThread.join();
+        streamReadThread = null;
     }
 }
