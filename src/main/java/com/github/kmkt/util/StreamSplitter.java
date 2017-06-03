@@ -9,8 +9,17 @@ import java.util.Objects;
  * InputStream を指定されたデリミタ(byte[])で個別の InputStream に分割する。
  * <pre>
  * 非スレッドセーフ
+ * {@code
+ * InputStream is = {@link #nextStream()};
+ * while (is != null) {
+ *   int c = is.read();
+ *   if (c == -1) {
+ *     // Get next InputStream if last one is finished.
+ *     is = {@link #nextStream()};
+ *   }
+ * }
+ * }
  * </pre>
- *
  * License : MIT License
  */
 public class StreamSplitter implements AutoCloseable {
@@ -35,19 +44,22 @@ public class StreamSplitter implements AutoCloseable {
     private boolean inputEoS = false;   // 元InputStream終端フラグ
 
     /**
-     *
-     * @param is
-     * @param delimiter
+     * 元となる InputStream とデリミタを与えてインスタンスを生成する。
+     * デリミタ探索用バッファはデフォルトサイズ {@link #BUF_SIZE} で生成される。
+     * @param is 元となる InputStream notnull
+     * @param delimiter デリミタ notnull
+     * @throws NullPointerException is, delimiter が null の場合
      */
     public StreamSplitter(InputStream is, byte[] delimiter) {
         this(is, delimiter, BUF_SIZE);
     }
 
     /**
-     *
-     * @param is
-     * @param delimiter
-     * @param buf_size
+     * 元となる InputStream とデリミタを与えてインスタンスを生成する。
+     * @param is 元となる InputStream notnull
+     * @param delimiter デリミタ notnull
+     * @param buf_size デリミタ探索用バッファサイズ(2^nサイズに調整される)
+     * @throws NullPointerException is, delimiter が null の場合
      */
     public StreamSplitter(InputStream is, byte[] delimiter, int buf_size) {
         if (is == null)
@@ -124,6 +136,11 @@ public class StreamSplitter implements AutoCloseable {
         inputStream.close();
     }
 
+    /**
+     * 分割された次の InputStream を取得する。
+     * @return 分割後の内容を返す InputStream 元 InputStream が終端している場合は null を返す。
+     * @throws IllegalStateException 以前に返した InputStream が終端していない（内容が残っている）場合。
+     */
     public InputStream nextStream() {
         if (childStream == null) {
             childStream = new InnerInputStream();
