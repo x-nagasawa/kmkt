@@ -58,16 +58,17 @@ public class StreamSplitter implements AutoCloseable {
      * 元となる InputStream とデリミタを与えてインスタンスを生成する。
      * @param is 元となる InputStream notnull
      * @param delimiter デリミタ notnull
-     * @param buf_size デリミタ探索用バッファサイズ(2^nサイズに調整される)
+     * @param buf_size デリミタ探索用バッファサイズ(2^nサイズに調整される) delimiter.length の 2 倍以上の大きさが必要
      * @throws NullPointerException is, delimiter が null の場合
+     * @throws IllegalArgumentException delimiter が 0 byte の場合, buf_size が delimiter サイズに対して小さすぎる場合
      */
     public StreamSplitter(InputStream is, byte[] delimiter, int buf_size) {
-        if (is == null)
-            throw new IllegalArgumentException("is should not be null");
-        if (delimiter == null)
-            throw new IllegalArgumentException("delimiter should not be null");
-        if (buf_size < delimiter.length*4)
-            throw new IllegalArgumentException("buf_size should be 4 times larger than delimiter size");
+        Objects.requireNonNull(is, "is should not be null");
+        Objects.requireNonNull(delimiter, "delimiter should not be null");
+        if (delimiter.length == 0)
+            throw new IllegalArgumentException("delimiter should have 1 byte at least");
+        if (buf_size < delimiter.length*2)
+            throw new IllegalArgumentException("buf_size should be 2 times larger than delimiter size");
 
         // 指定の buf_size が収まる 2^n サイズにバッファサイズを調整
         int mod_mask = buf_size - 1;
