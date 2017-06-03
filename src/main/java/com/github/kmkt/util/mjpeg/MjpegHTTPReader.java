@@ -7,8 +7,11 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.apache.http.Header;
+import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -274,21 +277,37 @@ public class MjpegHTTPReader {
         }
 
         HttpEntity entity = response.getEntity();
-        String[] content_type = entity.getContentType().getValue().split("\\s*;\\s*");
+        Header content_type_header = entity.getContentType();
+        if (content_type_header.getElements().length == 0) {
+            httpget.abort();
+            throw new IOException("HTTP Response should have a Content-type header");
+        }
 
         logger.debug("Content-type '{}'", entity.getContentType().getValue());
-
-        if (!"multipart/x-mixed-replace".equals(content_type[0])) {
+        HeaderElement ele = content_type_header.getElements()[0];
+        if (!"multipart/x-mixed-replace".equals(ele.getName())) {
             httpget.abort();
-            throw new IOException("Content-type is not multipart/x-mixed-replace but " + content_type[0]);
+            throw new IOException("Content-type is not multipart/x-mixed-replace but " + ele.getName());
         }
-        if (!content_type[1].matches("^boundary\\s*=\\s*.+$")) {
+
+        NameValuePair boundary_param = ele.getParameterByName("boundary");
+        if (boundary_param == null) {
             httpget.abort();
             throw new IOException("Content-type should have boundary option");
         }
 
+        String boundary_value = boundary_param.getValue();
+        if (boundary_value == null || boundary_value.isEmpty()) {
+            httpget.abort();
+            throw new IOException("Content-type should have non-empty boundary option");
+        }
+
         // boundary バイト列作成
-        String boundary_str = "--"+content_type[1].replaceFirst("boundary\\s*=\\s*(--)?", "");
+        // RFC2046 に反して、"--"を含むバウンダリ文字列そのものを boundary option に
+        // 設定するサーバ対策として、boundary_value 頭にある "--" は一端削除する。
+        // これにより、multipart body の末尾に "--" が残るが、 JPEG フレーム切り出し時に
+        // 切り捨てられるため、出力される JPEG フレームには影響しない。
+        String boundary_str = "--"+boundary_value.replaceFirst("--", "");
         ByteArrayOutputStream b = new ByteArrayOutputStream();
         b.write(boundary_str.getBytes());
         b.write((byte) 0x0d);
